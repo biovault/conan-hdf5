@@ -14,6 +14,7 @@ find_package (HDF5 REQUIRED COMPONENTS CXX static)  # Using the static cpp libra
 set (example hdf5example)
 
 add_executable (${example} ${example}.cpp)
+set_property(TARGET ${example} PROPERTY CXX_STANDARD 11)
 message("HDF5 VARIABLES FOR CXX 1: ${HDF5_INCLUDE_DIR} 2: ${HDF5_CXX_STATIC_LIBRARY}")
 target_include_directories(${example} PRIVATE ${HDF5_INCLUDE_DIR})
 target_link_libraries (${example} PRIVATE ${HDF5_CXX_STATIC_LIBRARY})
