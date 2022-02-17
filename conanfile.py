@@ -57,8 +57,8 @@ class HDF5Conan(ConanFile):
             os.unlink(self.windows_archive_name)
             os.rename(self.windows_source_folder, self.source_subfolder)
         else:
-            tools.get(f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{major_minor_version}/hdf5-{self.version}/src/hdf5-{self.version}.tar.gz")
-            os.rename(f"hdf5-{self.version}", self.source_subfolder)
+            tools.get(f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{major_minor_version}/hdf5-{self.version}/src/CMake-hdf5-{self.version}.tar.gz")
+            os.rename(self.windows_source_folder, self.source_subfolder)
 
     def _system_package_architecture(self):
         if tools.os_info.with_apt:
