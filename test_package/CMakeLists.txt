@@ -1,10 +1,15 @@
 cmake_minimum_required (VERSION 3.12)
 project (PackageTest C CXX)
 
-# Using the static cpp library 
-# Note: The HDF5 share director need to be in the CMAKE_PREFIX_PATH
+
+# Note: The HDF5 share directory contains the CMake package
+# this need to be in the CMAKE_PREFIX_PATH
 # in order to locate the cmake package files
-find_package (HDF5 REQUIRED COMPONENTS CXX static)
+#
+# Alternatively pass an HDF5_ROOT and use a HINTS or PATH
+# option in the find_package thus
+# find_package (HDF5 REQUIRED COMPONENTS CXX static PATHS "${HDF5_ROOT}/share")
+find_package (HDF5 REQUIRED COMPONENTS CXX static)  # Using the static cpp library 
 
 set (example hdf5example)
 

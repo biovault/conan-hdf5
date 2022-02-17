@@ -38,11 +38,11 @@ class Hdf5TestConan(ConanFile):
                 np_d = np_d.astype(np.float64)
                 np_q = np.random.randint(0, 128, size=(1000, 128), dtype=np.uint8)
                 np_q = np_q.astype(np.float64)
-                f.create_dataset("dataset", data=np_d)
-                f.create_dataset("query", data=np_q)
+                f.create_dataset("test_dataset1", data=np_d)
+                f.create_dataset("test_dataset2", data=np_q)
             print("Running hdf5 example...")
 
             if self.settings.os == "Windows":
-                self.run(str(Path(Path.cwd(), "Release", "hdf5example.exe")) + " dataset.hdf5 dataset query" )
+                self.run(str(Path(Path.cwd(), "Release", "hdf5example.exe")) + " dataset.hdf5 test_dataset1" )
             else:
-                self.run(str(Path(Path.cwd(), "hdf5example")) + " dataset.hdf5 dataset query" )
+                self.run(str(Path(Path.cwd(), "hdf5example")) + " dataset.hdf5 test_dataset1" )
