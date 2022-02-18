@@ -37,7 +37,7 @@ runs:
       run: |
         pip install wheel
         pip install conan~=1.43.0
-        pip install markupsafe<2.1
+        pip install "markupsafe<2.1"
         pip install -Iv cmake>=3.17
         pip install h5py
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then sudo apt-get install -y ninja-build; fi
