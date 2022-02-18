@@ -3,9 +3,9 @@ name: Build
 on: [push, pull_request, workflow_dispatch]
 
 jobs:
-  # Job to buildwheels on all platforms
-  build_wheels:
-    name: Build wheels on ${{ matrix.name}}
+  # Job to conan packages on all platforms
+  conan_packager:
+    name: ${{ matrix.name}} hdf5 conan package
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:

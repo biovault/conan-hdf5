@@ -7,6 +7,7 @@ from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain
 from conans.errors import ConanException
 import subprocess
 from pathlib import Path
+import shutil
 
 
 class HDF5Conan(ConanFile):
@@ -171,8 +172,8 @@ class HDF5Conan(ConanFile):
     def build(self):
 
         # Until we know exactly which  dlls are needed just build release
-        # cmake_debug = self._configure_cmake()
-        # self._do_build(cmake_debug, "Debug")
+        cmake_debug = self._configure_cmake()
+        self._do_build(cmake_debug, "Debug")
 
         cmake_release = self._configure_cmake()
         self._do_build(cmake_release, "Release")
@@ -216,20 +217,30 @@ class HDF5Conan(ConanFile):
         ):
             self.copy("*.pdb", src=src_dir, dst=dst_lib, keep_path=False)
 
+
+
+
     def package(self):
         package_dir = os.path.join(self.build_folder, "package")
         print("Packaging install dir: ", package_dir)
-        # subprocess.run(
-        #     [
-        #         "cmake",
-        #         "--install",
-        #         self.build_folder,
-        #         "--config",
-        #         "Debug",
-        #         "--prefix",
-        #         os.path.join(package_dir, "Debug"),
-        #     ]
-        # )
+        subprocess.run(
+            [
+                "cmake",
+                "--install",
+                self.build_folder,
+                "--config",
+                "Debug",
+                "--prefix",
+                package_dir,
+            ]
+        )
+        if tools.os_info.is_windows:
+            pdb_dest = Path(package_dir, 'pdb')
+            pdb_dest.mkdir()
+            pdb_files = Path(self.build_folder).glob('bin/Debug/*.pdb')
+            for pfile in pdb_files:
+                shutil.copy(pfile, pdb_dest)
+
         subprocess.run(
             [
                 "cmake",
@@ -238,32 +249,10 @@ class HDF5Conan(ConanFile):
                 "--config",
                 "Release",
                 "--prefix",
-                os.path.join(package_dir, "Release"),
+                package_dir,
             ]
         )
+        # Merge the Debug and Release into a single directory
+        #self._merge_install_dirs(['Debug', 'Release'], 'DebRel', Path(package_dir), delete=True)
         self.copy(pattern="*", src=package_dir)
-        # for path, subdirs, names in os.walk(
-        #     os.path.join(self.package_folder, "lib", "cmake")
-        # ):
-        #     for name in names:
-        #         if fnmatch(name, "*.cmake"):
-        #             cmake_file = os.path.join(path, name)
 
-        #             if tools.os_info.is_macos:
-        #                 self.cmake_fix_macos_sdk_path(cmake_file)
-        # Debug
-        # self._pkg_bin("Debug")
-        # Release
-    #     self._pkg_bin("Release")
-
-    # def package_info(self):
-    #     self.cpp_info.libs = tools.collect_libs(self)
-
-    #     self.cpp_info.includedirs = [
-    #         "include/vtk-%s" % self.short_version,
-    #         "include/vtk-%s/vtknetcdf/include" % self.short_version,
-    #         "include/vtk-%s/vtknetcdfcpp" % self.short_version,
-    #     ]
-
-    #     if self.settings.os == "Linux":
-    #         self.cpp_info.libs.append("pthread")
