@@ -1,0 +1,24 @@
+cmake_minimum_required (VERSION 3.12)
+project (test_hdf5 C CXX)
+
+# Conan is used to install and get the hdf5_DIR
+include(${CMAKE_BINARY_DIR}/conanbuildinfo.cmake)
+conan_basic_setup()
+
+# Note: The HDF5 share directory contains the CMake package
+# this need to be in the CMAKE_PREFIX_PATH
+# in order to locate the cmake package files
+#
+# Alternatively pass an HDF5_ROOT and use a HINTS or PATH
+# option in the find_package thus
+# find_package (HDF5 REQUIRED COMPONENTS CXX static PATHS "${HDF5_ROOT}/share")
+
+find_package (HDF5 1.10.8 REQUIRED COMPONENTS CXX static PATHS "${hdf5_DIR}")  # Using the static cpp library 
+print_all_variables()
+set (example hdf5example)
+
+add_executable (${example} ${example}.cpp)
+set_property(TARGET ${example} PROPERTY CXX_STANDARD 11)
+message("HDF5 VARIABLES FOR CXX 1: ${HDF5_INCLUDE_DIR} 2: ${HDF5_CXX_STATIC_LIBRARY}")
+target_include_directories(${example} PRIVATE ${HDF5_INCLUDE_DIR})
+target_link_libraries (${example} PRIVATE ${HDF5_CXX_STATIC_LIBRARY})

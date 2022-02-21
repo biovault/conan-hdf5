@@ -1,0 +1,11 @@
+[requires]
+hdf5/1.10.8@lkeb/stable
+zlib/1.2.11
+
+[generators]
+cmake
+
+[options]
+hdf5:cxx=True
+hdf5:parallel=False
+hdf5:shared=True
