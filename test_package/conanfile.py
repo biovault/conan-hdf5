@@ -10,7 +10,7 @@ class Hdf5TestConan(ConanFile):
     name = "Hdf5PackageTest"
     settings = "os", "compiler", "build_type", "arch"
     generators = "CMakeDeps"
-    requires = "hdf5/1.10.8" 
+    requires = "hdf5/1.12.1"
     exports = "CMakeLists.txt", "hdf5example.cpp"
 
     def generate(self):
@@ -18,7 +18,7 @@ class Hdf5TestConan(ConanFile):
         tc = CMakeToolchain(self)
         # Use the HDF5 cmake package in the share directory
         tc.variables["CMAKE_PREFIX_PATH"] = Path(
-            self.deps_cpp_info["hdf5"].rootpath, 'share'
+            self.deps_cpp_info["hdf5"].rootpath, "share", "cmake"
         ).as_posix()
         tc.generate()
         deps = CMakeDeps(self)
@@ -43,6 +43,11 @@ class Hdf5TestConan(ConanFile):
             print("Running hdf5 example...")
 
             if self.settings.os == "Windows":
-                self.run(str(Path(Path.cwd(), "Release", "hdf5example.exe")) + " dataset.hdf5 test_dataset1" )
+                self.run(
+                    str(Path(Path.cwd(), "Release", "hdf5example.exe"))
+                    + " dataset.hdf5 test_dataset1"
+                )
             else:
-                self.run(str(Path(Path.cwd(), "hdf5example")) + " dataset.hdf5 test_dataset1" )
+                self.run(
+                    str(Path(Path.cwd(), "hdf5example")) + " dataset.hdf5 test_dataset1"
+                )

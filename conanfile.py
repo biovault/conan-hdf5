@@ -12,7 +12,7 @@ import shutil
 
 class HDF5Conan(ConanFile):
     name = "hdf5"
-    version = "1.10.8"
+    version = "1.12.1"
     description = "HDF5 C and C++ libraries"
     url = "http://github.com/biovault/conan-hdf5"
     license = "MIT"
@@ -24,21 +24,13 @@ class HDF5Conan(ConanFile):
     exports = [
         "LICENSE.md",
         "CMakeLists.txt",
-    #    "FindVTK.cmake",
-    #    "vtknetcdf_snprintf.diff",
-    #    "vtktiff_mangle.diff",
+        #    "FindVTK.cmake",
+        #    "vtknetcdf_snprintf.diff",
+        #    "vtktiff_mangle.diff",
     ]
     source_subfolder = "hdf5"
-    options = {
-        "shared": [True, False],
-        "cxx": [True, False],
-        "parallel": [True, False]
-    }
-    default_options = (
-        "shared=True",
-        "cxx=True",
-        "parallel=False"
-    )
+    options = {"shared": [True, False], "cxx": [True, False], "parallel": [True, False]}
+    default_options = ("shared=True", "cxx=True", "parallel=False")
 
     short_paths = True
 
@@ -52,13 +44,15 @@ class HDF5Conan(ConanFile):
         if tools.os_info.is_windows:
             tools.download(
                 f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{major_minor_version}/hdf5-{self.version}/src/CMake-hdf5-{self.version}.zip",
-                self.windows_archive_name
+                self.windows_archive_name,
             )
             tools.unzip(self.windows_archive_name)
             os.unlink(self.windows_archive_name)
             os.rename(self.windows_source_folder, self.source_subfolder)
         else:
-            tools.get(f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{major_minor_version}/hdf5-{self.version}/src/CMake-hdf5-{self.version}.tar.gz")
+            tools.get(
+                f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{major_minor_version}/hdf5-{self.version}/src/CMake-hdf5-{self.version}.tar.gz"
+            )
             os.rename(self.windows_source_folder, self.source_subfolder)
 
     def _system_package_architecture(self):
@@ -74,7 +68,6 @@ class HDF5Conan(ConanFile):
             elif self.settings.arch == "x86_64":
                 return ".x86_64"
         return ""
-
 
     def configure(self):
         if self.options.cxx and self.options.parallel:
@@ -111,10 +104,10 @@ class HDF5Conan(ConanFile):
         tc.variables["BUILD_SHARED_LIBS"] = "TRUE" if self.options.shared else "FALSE"
 
         # HDF5 options
-        if (self.options.cxx):
+        if self.options.cxx:
             tc.variables["HDF5_BUILD_CPP_LIB"] = "ON"
 
-        if (self.options.parallel):
+        if self.options.parallel:
             tc.variables["HDF5_ENABLE_PARALLEL"] = "ON"
 
         tc.variables["HDF5_BUILD_EXAMPLES"] = "OFF"
@@ -154,7 +147,9 @@ class HDF5Conan(ConanFile):
         cmake = CMake(self)
         build_path = Path(self.source_subfolder) / f"hdf5-{self.version}"
         print(f"source path {str(build_path)}")
-        cmake.configure( build_script_folder=str(build_path) )  # build_script_folder=str(PureWindowsPath(self.source_subfolder))
+        cmake.configure(
+            build_script_folder=str(build_path)
+        )  # build_script_folder=str(PureWindowsPath(self.source_subfolder))
         return cmake
 
     def _do_build(self, cmake, build_type):
@@ -217,9 +212,6 @@ class HDF5Conan(ConanFile):
         ):
             self.copy("*.pdb", src=src_dir, dst=dst_lib, keep_path=False)
 
-
-
-
     def package(self):
         package_dir = os.path.join(self.build_folder, "package")
         print("Packaging install dir: ", package_dir)
@@ -235,9 +227,9 @@ class HDF5Conan(ConanFile):
             ]
         )
         if tools.os_info.is_windows:
-            pdb_dest = Path(package_dir, 'pdb')
+            pdb_dest = Path(package_dir, "pdb")
             pdb_dest.mkdir()
-            pdb_files = Path(self.build_folder).glob('bin/Debug/*.pdb')
+            pdb_files = Path(self.build_folder).glob("bin/Debug/*.pdb")
             for pfile in pdb_files:
                 shutil.copy(pfile, pdb_dest)
 
@@ -253,6 +245,5 @@ class HDF5Conan(ConanFile):
             ]
         )
         # Merge the Debug and Release into a single directory
-        #self._merge_install_dirs(['Debug', 'Release'], 'DebRel', Path(package_dir), delete=True)
+        # self._merge_install_dirs(['Debug', 'Release'], 'DebRel', Path(package_dir), delete=True)
         self.copy(pattern="*", src=package_dir)
-

@@ -1,6 +1,16 @@
 cmake_minimum_required (VERSION 3.12)
 project (PackageTest C CXX)
 
+macro(print_all_variables)
+    message(STATUS "print_all_variables------------------------------------------{")
+    get_cmake_property(_variableNames VARIABLES)
+    foreach (_variableName ${_variableNames})
+        message(STATUS "${_variableName}=${${_variableName}}")
+    endforeach()
+    message(STATUS "print_all_variables------------------------------------------}")
+endmacro()
+
+
 
 # Note: The HDF5 share directory contains the CMake package
 # this need to be in the CMAKE_PREFIX_PATH
@@ -9,7 +19,9 @@ project (PackageTest C CXX)
 # Alternatively pass an HDF5_ROOT and use a HINTS or PATH
 # option in the find_package thus
 # find_package (HDF5 REQUIRED COMPONENTS CXX static PATHS "${HDF5_ROOT}/share")
-find_package (HDF5 REQUIRED COMPONENTS CXX static)  # Using the static cpp library 
+find_package (HDF5 NAMES hdf5 REQUIRED COMPONENTS CXX static)  # Using the static cpp library 
+
+# print_all_variables()
 
 set (example hdf5example)
 

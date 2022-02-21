@@ -75,7 +75,7 @@ runs:
         conan profile update settings.compiler.libcxx=${{ inputs.conan-libcxx-version}} action_build
         conan profile show action_build
         export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
-        conan create . hdf5/1.10.8@lkeb/stable --profile action_build -s build_type=Release
+        conan create . hdf5/1.12.1@lkeb/stable --profile action_build -s build_type=Release
 
       shell: bash
       env:
