@@ -36,7 +36,7 @@ runs:
     - name: Install conan & build configuration
       run: |
         pip install wheel
-        pip install conan~=1.43.0
+        pip install conan~=1.51.0
         pip install "markupsafe<2.1"
         pip install -Iv cmake>=3.17
         pip install h5py
@@ -75,7 +75,7 @@ runs:
         conan profile update settings.compiler.libcxx=${{ inputs.conan-libcxx-version}} action_build
         conan profile show action_build
         export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
-        conan create . hdf5/1.12.1@lkeb/stable --profile action_build -s build_type=Release
+        conan create . hdf5/1.12.1@lkeb/stable -pr:h action_build -pr:b action_build -s build_type=Release
 
       shell: bash
       env:
