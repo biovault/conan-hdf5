@@ -24,7 +24,7 @@ runs:
     - name: Install conan & build configuration
       run: |
         pip install wheel
-        pip install conan~=1.43.0
+        pip install conan~=1.51.0
         pip install "markupsafe<2.1"
         pip install -Iv cmake>=3.17
         pip install h5py
@@ -70,7 +70,7 @@ runs:
         conan profile update conf.tools.microsoft.msbuild:max_cpu_count=2 action_build
         conan profile show action_build
 
-        conan create . hdf5/1.12.1@lkeb/stable --profile action_build -s build_type=Release
+        conan create . hdf5/1.12.1@lkeb/stable -pr:h action_build -pr:b action_build -s build_type=Release
 
       shell: cmd
       env:
