@@ -8,6 +8,10 @@ from conans.errors import ConanException
 import subprocess
 from pathlib import Path
 import shutil
+import argparse
+import json
+
+# derived from https://github.com/conan-io/conan-center-index/blob/master/recipes/hdf5/all/conanfile.py
 
 
 class HDF5Conan(ConanFile):
@@ -19,7 +23,6 @@ class HDF5Conan(ConanFile):
     # generators = "cmake"
     generators = "CMakeDeps"
     settings = "os", "compiler", "build_type", "arch"
-    requires = "zlib/1.2.11"
     revision_mode = "scm"
     exports = [
         "LICENSE.md",
@@ -29,8 +32,22 @@ class HDF5Conan(ConanFile):
         #    "vtktiff_mangle.diff",
     ]
     source_subfolder = "hdf5"
-    options = {"shared": [True, False], "cxx": [True, False], "parallel": [True, False]}
-    default_options = ("shared=True", "cxx=True", "parallel=False")
+    options = {
+        "shared": [True, False],
+        "cxx": [True, False],
+        "parallel": [True, False],
+        "with_zlib": [True, False],
+        "szip_support": [True, False],
+        "build_hl": [True, False],
+    }
+    default_options = (
+        "shared=False",
+        "cxx=True",
+        "parallel=False",
+        "with_zlib=True",
+        "szip_support=False",
+        "build_hl=False",
+    )
 
     short_paths = True
 
@@ -78,6 +95,19 @@ class HDF5Conan(ConanFile):
         if self.settings.compiler == "Visual Studio":
             del self.options.fPIC
 
+    def requirements(self):
+        if self.options.with_zlib:
+            self.requires("zlib/1.2.13")
+        if self.options.szip_support:
+            self.requires("szip/2.1.1")
+        if self.options.parallel:
+            self.requires("openmpi/4.1.0")
+
+    # Required to define build_folder for generate when using install with --build=never
+    def layout(self):
+        self.folders.build = "build"
+        self.folders.generators = self.folders.build
+
     def _get_tc(self):
         """Generate the CMake configuration using
         multi-config generators on all platforms, as follows:
@@ -104,17 +134,26 @@ class HDF5Conan(ConanFile):
         tc.variables["BUILD_SHARED_LIBS"] = "TRUE" if self.options.shared else "FALSE"
 
         # HDF5 options
-        if self.options.cxx:
-            tc.variables["HDF5_BUILD_CPP_LIB"] = "ON"
+        tc.variables["HDF5_BUILD_CPP_LIB"] = "ON" if self.options.cxx else "OFF"
+        tc.variables["HDF5_ENABLE_PARALLEL"] = "ON" if self.options.parallel else "OFF"
 
-        if self.options.parallel:
-            tc.variables["HDF5_ENABLE_PARALLEL"] = "ON"
+        tc.variables["HDF5_BUILD_HL_LIB"] = "ON" if self.options.build_hl else "OFF"
+        tc.variables["HDF5_BUILDHL_TOOLS"] = "ON" if self.options.build_hl else "OFF"
+
+        tc.variables["HDF5_ENABLE_SZIP_SUPPORT"] = (
+            "ON" if self.options.szip_support else "OFF"
+        )
+
+        # Using an external zlib
+        if self.options.with_zlib:
+            tc.variables["HDF5_ENABLE_Z_LIB_SUPPORT"] = "ON"
+        #    tc.variables["HDF5_ALLOW_EXTERNAL_SUPPORT"] = "GIT"
+        #    tc.variables["ZLIB_URL"] = "https://github.com/madler/zlib"
+        #    tc.variables["ZLIB_BRANCH"] = "tags/v1.2.13"
 
         tc.variables["HDF5_BUILD_EXAMPLES"] = "OFF"
         tc.variables["HDF5_BUILD_UTILS"] = "OFF"
         tc.variables["HDF5_BUILD_TOOLS"] = "OFF"
-        tc.variables["HDF5_BUILD_HL_LIB"] = "OFF"
-        tc.variables["HDF5_BUILDHL_TOOLS"] = "OFF"
 
         if (
             self.settings.build_type == "Debug"
@@ -127,9 +166,9 @@ class HDF5Conan(ConanFile):
             self.output.info("cmake build: %s" % self.build_folder)
 
         tc.variables["CMAKE_TOOLCHAIN_FILE"] = "conan_toolchain.cmake"
-        tc.variables["CMAKE_INSTALL_PREFIX"] = str(
-            Path(self.build_folder, "install")
-        ).replace("\\", "/")
+        tc.variables["CMAKE_INSTALL_PREFIX"] = os.path.join(
+            self.build_folder, "install"
+        )
 
         if self.settings.os == "Linux":
             tc.variables["CMAKE_CONFIGURATION_TYPES"] = "Debug;Release"
@@ -166,6 +205,8 @@ class HDF5Conan(ConanFile):
 
     def build(self):
 
+        print(f"zlib rootpath: {Path(self.deps_cpp_info['zlib'].rootpath).as_posix()}")
+
         # Until we know exactly which  dlls are needed just build release
         cmake_debug = self._configure_cmake()
         self._do_build(cmake_debug, "Debug")
@@ -198,21 +239,40 @@ class HDF5Conan(ConanFile):
         if self.settings.compiler == "Visual Studio":
             del self.info.settings.compiler.runtime
 
-    def _pkg_bin(self, build_type):
-        src_dir = f"{self.build_folder}/lib/{build_type}"
-        dst_lib = f"lib/{build_type}"
-        dst_bin = f"bin/{build_type}"
-        self.copy("*.lib", src=src_dir, dst=dst_lib, keep_path=False)
-        self.copy("*.dll", src=src_dir, dst=dst_bin, keep_path=False)
-        self.copy("*.so", src=src_dir, dst=dst_lib, keep_path=False)
-        self.copy("*.dylib", src=src_dir, dst=dst_lib, keep_path=False)
-        self.copy("*.a", src=src_dir, dst=dst_lib, keep_path=False)
-        if ((build_type == "Debug") or (build_type == "RelWithDebInfo")) and (
-            self.settings.compiler == "Visual Studio"
-        ):
-            self.copy("*.pdb", src=src_dir, dst=dst_lib, keep_path=False)
+    # def _pkg_bin(self, build_type):
+    #     src_dir = f"{self.build_folder}/lib/{build_type}"
+    #     dst_lib = f"lib/{build_type}"
+    #     dst_bin = f"bin/{build_type}"
+    #     self.copy("*.lib", src=src_dir, dst=dst_lib, keep_path=False)
+    #     self.copy("*.dll", src=src_dir, dst=dst_bin, keep_path=False)
+    #     self.copy("*.so", src=src_dir, dst=dst_lib, keep_path=False)
+    #     self.copy("*.dylib", src=src_dir, dst=dst_lib, keep_path=False)
+    #     self.copy("*.a", src=src_dir, dst=dst_lib, keep_path=False)
+    #     if ((build_type == "Debug") or (build_type == "RelWithDebInfo")) and (
+    #         self.settings.compiler == "Visual Studio"
+    #     ):
+    #         self.copy("*.pdb", src=src_dir, dst=dst_lib, keep_path=False)
+
+    def _inject_stem_suffix(self, path, suffix):
+        """_summary_
+
+        Parameters
+        ----------
+        path : Path
+            file name (potentially with path)
+        suffix : str
+            suffix string to inject before .extension
+
+        Returns
+        -------
+        Path
+            Just the file name (no preceeding path) with the suffix injected
+        """
+        new_path = Path(path.stem + suffix + path.suffix)
+        return new_path
 
     def package(self):
+        # Merge the Debug and Release into a single directory
         package_dir = os.path.join(self.build_folder, "package")
         print("Packaging install dir: ", package_dir)
         subprocess.run(
@@ -233,6 +293,16 @@ class HDF5Conan(ConanFile):
             for pfile in pdb_files:
                 shutil.copy(pfile, pdb_dest)
 
+        if self.options.with_zlib:
+            print("packaging zlib")
+            zlib_libs = Path(self.deps_cpp_info["zlib"].rootpath, "lib").glob("*.*")
+            lib_dest = Path(package_dir, "lib")
+            lib_dest.mkdir(parents=True)
+            for lib in zlib_libs:
+                suffixed_file = self._inject_stem_suffix(lib, "d")
+                print(f"packaging zlib from {lib} to {lib_dest} {suffixed_file}")
+                shutil.copy(lib, Path(lib_dest, suffixed_file))
+
         subprocess.run(
             [
                 "cmake",
@@ -244,6 +314,112 @@ class HDF5Conan(ConanFile):
                 package_dir,
             ]
         )
-        # Merge the Debug and Release into a single directory
-        # self._merge_install_dirs(['Debug', 'Release'], 'DebRel', Path(package_dir), delete=True)
+
+        # package the requirements along with hdf5 if they are found
+        if (
+            Path("libpath_dict.json").exists()
+            and Path("libpath_debug_dict.json").exists()
+        ):
+            with open("libpath_dict.json", "r") as f:
+                libpath_dict = json.load(f)
+            with open("libpath_debug_dict.json", "r") as f:
+                libpath_debug_dict = json.load(f)
+
+            if self.options.with_zlib:
+                print("packaging zlib")
+                lib_dest = Path(libpath_dict["zlib"], "lib")
+                lib_dest.mkdir(parents=True)
+                for lib in zlib_libs:
+                    print(f"packaging zlib from {lib} to {lib_dest}")
+                    shutil.copy(lib, lib_dest)
+
         self.copy(pattern="*", src=package_dir)
+
+
+if __name__ == "__main__":
+    """
+    1) Install all requirements for this package - Release + Debug
+    2) Get list of requirements
+    3) For each requirement get the install path - create a release and debug dict
+    4) Write files
+    """
+    # 1) Install all dependencies - Release + Debug
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "build_profile_name", type=str, help="Name of the conan profile used for build"
+    )
+    parser.add_argument(
+        "host_profile_name", type=str, help="Name of the conan profile used for host"
+    )
+    args = parser.parse_args()
+
+    # Install Release
+    installCmd = [
+        "conan",
+        "install",
+        ".",
+        f"-pr:b={args.build_profile_name}",
+        f"-pr:h={args.host_profile_name}",
+        "--build=never",
+    ]
+    subprocess.run(installCmd)
+
+    # Install Debug
+    debugInstallCmd = installCmd + [
+        "-s:h",
+        "build_type=Debug",
+    ]
+    if os.name == "nt":
+        debugInstallCmd = debugInstallCmd + ["-s:h", "compiler.runtime=MDd"]
+    subprocess.run(debugInstallCmd)
+
+    # 2) Get list of requirements
+    res = subprocess.run(
+        ["conan", "info", ".", "--build-order=ALL"], capture_output=True, text=True
+    )
+
+    reqs = res.stdout.strip("[]\n").split(",")
+
+    # 3) For each requirement get the install path - create a release and debug dict
+    libpath_dict = {}
+    libpath_debug_dict = {}
+    for req in reqs:
+        infoCmd = [
+            "conan",
+            "info",
+            "--paths",
+            "--package-filter",
+            f"{req}",
+            "--only",
+            "package_folder",
+            ".",
+            f"-pr:b={args.build_profile_name}",
+            f"-pr:h={args.host_profile_name}",
+        ]
+        res = subprocess.run(
+            infoCmd,
+            capture_output=True,
+            text=True,
+        )
+        lib_path = res.stdout.replace("package_folder:", "").split()
+        libpath_dict[req.split("/")[0]] = str(Path(lib_path[1]).as_posix())
+
+        debugInfoCmd = infoCmd + ["-s:h", "build_type=Debug"]
+
+        if os.name == "nt":
+            debugInfoCmd = debugInfoCmd + ["-s:h", "compiler.runtime=MDd"]
+
+        res = subprocess.run(
+            debugInfoCmd,
+            capture_output=True,
+            text=True,
+        )
+        lib_path = res.stdout.replace("package_folder:", "").split()
+        libpath_debug_dict[req.split("/")[0]] = str(Path(lib_path[1]).as_posix())
+
+    print(libpath_dict)
+    print(libpath_debug_dict)
+    with open("libpath_dict.json", "w") as f:
+        json.dump(libpath_dict, f)
+    with open("libpath_debug_dict.json", "w") as f:
+        json.dump(libpath_debug_dict, f)
