@@ -24,7 +24,7 @@ runs:
     - name: Install conan & build configuration
       run: |
         pip install wheel
-        pip install conan~=1.43.0
+        pip install conan~=1.51.0
         pip install "markupsafe<2.1"
         pip install -Iv cmake>=3.17
         pip install h5py
@@ -73,7 +73,7 @@ runs:
         REM Use the conanfile.py main to install the requirements both Debug & Release
         python conanfile.py action_build_2019 action_build_2019
         REM Build the combined package (hdf5 + requirements in one package)
-        conan create . hdf5/1.12.1@lkeb/stable --profile action_build -s build_type=Release
+        conan create . hdf5/1.12.1@lkeb/stable -pr:h action_build -pr:b action_build -s build_type=Release
 
       shell: cmd
       env:
