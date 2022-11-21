@@ -4,6 +4,7 @@ import re
 from fnmatch import fnmatch
 from conans import ConanFile, tools
 from conan.tools.cmake import CMake, CMakeDeps, CMakeToolchain
+from conan.tools import files
 from conans.errors import ConanException
 import subprocess
 from pathlib import Path
@@ -24,13 +25,11 @@ class HDF5Conan(ConanFile):
     generators = "CMakeDeps"
     settings = "os", "compiler", "build_type", "arch"
     revision_mode = "scm"
-    exports = [
+    exports = (
         "LICENSE.md",
         "CMakeLists.txt",
-        #    "FindVTK.cmake",
-        #    "vtknetcdf_snprintf.diff",
-        #    "vtktiff_mangle.diff",
-    ]
+        "*.json",
+    )  # When packaging the dependencies paths are in json files
     source_subfolder = "hdf5"
     options = {
         "shared": [True, False],
@@ -71,6 +70,11 @@ class HDF5Conan(ConanFile):
                 f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{major_minor_version}/hdf5-{self.version}/src/CMake-hdf5-{self.version}.tar.gz"
             )
             os.rename(self.windows_source_folder, self.source_subfolder)
+
+    def export(self):
+        print(f"export folder {self.export_folder}")
+        for jf in Path(".").glob("libpath*.json"):
+            print(f"JSON {jf}")
 
     def _system_package_architecture(self):
         if tools.os_info.with_apt:
@@ -161,13 +165,16 @@ class HDF5Conan(ConanFile):
         ):
             tc.variables["CMAKE_DEBUG_POSTFIX"] = "_d"
 
+        # Make sure all paths are Posix to avoid escape character issues
         if self.settings.os == "Macos":
-            self.env["DYLD_LIBRARY_PATH"] = os.path.join(self.build_folder, "lib")
+            self.env["DYLD_LIBRARY_PATH"] = str(
+                Path(self.build_folder, "lib").as_posix()
+            )
             self.output.info("cmake build: %s" % self.build_folder)
 
         tc.variables["CMAKE_TOOLCHAIN_FILE"] = "conan_toolchain.cmake"
-        tc.variables["CMAKE_INSTALL_PREFIX"] = os.path.join(
-            self.build_folder, "install"
+        tc.variables["CMAKE_INSTALL_PREFIX"] = str(
+            Path(self.build_folder, "install").as_posix()
         )
 
         if self.settings.os == "Linux":
@@ -239,20 +246,6 @@ class HDF5Conan(ConanFile):
         if self.settings.compiler == "Visual Studio":
             del self.info.settings.compiler.runtime
 
-    # def _pkg_bin(self, build_type):
-    #     src_dir = f"{self.build_folder}/lib/{build_type}"
-    #     dst_lib = f"lib/{build_type}"
-    #     dst_bin = f"bin/{build_type}"
-    #     self.copy("*.lib", src=src_dir, dst=dst_lib, keep_path=False)
-    #     self.copy("*.dll", src=src_dir, dst=dst_bin, keep_path=False)
-    #     self.copy("*.so", src=src_dir, dst=dst_lib, keep_path=False)
-    #     self.copy("*.dylib", src=src_dir, dst=dst_lib, keep_path=False)
-    #     self.copy("*.a", src=src_dir, dst=dst_lib, keep_path=False)
-    #     if ((build_type == "Debug") or (build_type == "RelWithDebInfo")) and (
-    #         self.settings.compiler == "Visual Studio"
-    #     ):
-    #         self.copy("*.pdb", src=src_dir, dst=dst_lib, keep_path=False)
-
     def _inject_stem_suffix(self, path, suffix):
         """_summary_
 
@@ -293,16 +286,6 @@ class HDF5Conan(ConanFile):
             for pfile in pdb_files:
                 shutil.copy(pfile, pdb_dest)
 
-        if self.options.with_zlib:
-            print("packaging zlib")
-            zlib_libs = Path(self.deps_cpp_info["zlib"].rootpath, "lib").glob("*.*")
-            lib_dest = Path(package_dir, "lib")
-            lib_dest.mkdir(parents=True)
-            for lib in zlib_libs:
-                suffixed_file = self._inject_stem_suffix(lib, "d")
-                print(f"packaging zlib from {lib} to {lib_dest} {suffixed_file}")
-                shutil.copy(lib, Path(lib_dest, suffixed_file))
-
         subprocess.run(
             [
                 "cmake",
@@ -315,25 +298,47 @@ class HDF5Conan(ConanFile):
             ]
         )
 
-        # package the requirements along with hdf5 if they are found
+        self.copy(pattern="*", src=package_dir)
+
+        libpath_folder = Path(__file__).parent.resolve()
+        print(f"check export folder {str(libpath_folder)} for libpaths")
+        # package the requirements if they are found
         if (
-            Path("libpath_dict.json").exists()
-            and Path("libpath_debug_dict.json").exists()
+            Path(libpath_folder, "libpath_dict.json").exists()
+            and Path(libpath_folder, "libpath_debug_dict.json").exists()
         ):
-            with open("libpath_dict.json", "r") as f:
+            with open(Path(libpath_folder, "libpath_dict.json"), "r") as f:
                 libpath_dict = json.load(f)
-            with open("libpath_debug_dict.json", "r") as f:
+            with open(Path(libpath_folder, "libpath_debug_dict.json"), "r") as f:
                 libpath_debug_dict = json.load(f)
 
+            # Merge debug and release zlibs as follows
+            # 1 Append d to debug lib files
+            # 2 Copy all directories to <hdps packaging>/deps/zlib https://docs.python.org/3/library/shutil.html#shutil.copytree
+            # 3 Define a ZLIB_ROOT variable as <hdps packaging>/deps/zlib (allows find_package(ZLIB))
             if self.options.with_zlib:
-                print("packaging zlib")
-                lib_dest = Path(libpath_dict["zlib"], "lib")
-                lib_dest.mkdir(parents=True)
+                print("packaging release zlib")
+                shutil.copytree(Path(libpath_dict["zlib"]), Path(package_dir, "zlib"))
+
+                print("packaging debug zlib binaries")
+                zlib_libs = Path(libpath_debug_dict["zlib"], "lib").glob("*.*")
+                lib_dest = Path(package_dir, "zlib", "lib")
                 for lib in zlib_libs:
                     print(f"packaging zlib from {lib} to {lib_dest}")
-                    shutil.copy(lib, lib_dest)
+                    # The original zlib libraries do not have a different name for debug.
+                    # So inject a suffix zlib.lib -> zlibd.lib to make a distinction.
+                    # The suffix is chosen for compatibility with cmake;s find_package(ZLIB)
+                    suffixed_file = self._inject_stem_suffix(lib, "d")
+                    shutil.copy(lib, Path(lib_dest, suffixed_file))
 
-        self.copy(pattern="*", src=package_dir)
+                # Add ZLIB_ROOT to package
+                # define content for hdf5-targets-zlib.cmake
+                zlib_cmake_path = Path(
+                    package_dir, "share", "cmake", "hdf5", "hdf5-targets-zlib.cmake"
+                )
+                contentstr = """set(HDF5_ZLIB_ROOT,  "${_IMPORT_PREFIX}/zlib")
+                """
+                files.save(self, Path(zlib_cmake_path), contentstr)
 
 
 if __name__ == "__main__":
