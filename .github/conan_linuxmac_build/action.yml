@@ -39,7 +39,7 @@ runs:
         pip install conan~=1.53.0
         pip install "markupsafe<2.1"
         pip install -Iv cmake>=3.17
-        if [[ ${{ inputs.conan-build-os }} == "Macos" ]]; then brew install hdf5@1.12.1; export HDF5_DIR=/opt/homebrew/Cellar/hdf5/; fi
+        if [[ ${{ inputs.conan-build-os }} == "Macos" ]]; then brew install hdf5@1.12; export HDF5_DIR=/opt/homebrew/Cellar/hdf5/; fi
         pip install h5py
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then sudo apt-get install -y ninja-build; fi
 
