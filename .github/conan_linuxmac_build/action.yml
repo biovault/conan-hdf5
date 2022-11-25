@@ -41,7 +41,7 @@ runs:
         arch -x86_64 pip install -Iv cmake>=3.17
         # The following is only for the self-hosted M1 with the x64 brew
         if [[ ${{ inputs.conan-build-os }} == "Macos" ]]; then sudo xcode-select -switch /Applications/Xcode_14.1.app/; export HDF5_DIR=/opt/homebrew/Cellar/hdf5/; fi
-        arch -x86-64 pip install h5py
+        arch -x86_64 pip install h5py
         if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then sudo apt-get install -y ninja-build; fi
 
         export CONAN_CMAKE_PROGRAM=`which cmake`
