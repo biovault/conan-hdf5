@@ -54,7 +54,8 @@ jobs:
           sudo xcode-select -switch /Applications/Xcode_${{matrix.build-xcode-version}}.app
 
       - name: Setup python 3 version
-        uses: actions/setup-python@v2
+        uses: actions/checkout@v3
+        uses: actions/setup-python@v4
         with:
           python-version: "3.9"
 
