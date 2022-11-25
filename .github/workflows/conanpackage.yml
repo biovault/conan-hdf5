@@ -10,13 +10,13 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Windows
-            os: windows-2019
-            compiler: msvc-2019
-            host-arch: x64
-            build-cversion: 16
-            build-runtime: MD
-            build-config: Release
+          # - name: Windows
+          #   os: windows-2019
+          #   compiler: msvc-2019
+          #   host-arch: x64
+          #   build-cversion: 16
+          #   build-runtime: MD
+          #   build-config: Release
 
           # - name: Linux_gcc9
           #  os: ubuntu-20.04
