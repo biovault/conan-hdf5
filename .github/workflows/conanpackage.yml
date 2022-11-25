@@ -13,6 +13,7 @@ jobs:
           - name: Windows
             os: windows-2019
             compiler: msvc-2019
+            host-arch: x64
             build-cversion: 16
             build-runtime: MD
             build-config: Release
@@ -36,6 +37,7 @@ jobs:
 
           - name: Macos_xcode12.4
             os: [self-hosted, macOS, X64]
+            host-arch: arm64 # out self hosted is on an arm64
             build-compiler: apple-clang
             build-cversion: "12.0"
             build-config: Release
@@ -56,8 +58,8 @@ jobs:
       - name: Setup python 3 version
         uses: actions/setup-python@v4
         with:
-          python-version: "3.9"
-          architecture: x64
+          python-version: '3.9'
+          architecture: ${{matrix.host-arch}}
 
       - name: Setup gcc for Linux
         if: startsWith(runner.os, 'Linux')
