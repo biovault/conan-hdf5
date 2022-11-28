@@ -138,9 +138,10 @@ class HDF5Conan(ConanFile):
         tc.variables["HDF5_BUILD_HL_LIB"] = "ON" if self.options.build_hl else "OFF"
         tc.variables["HDF5_BUILDHL_TOOLS"] = "ON" if self.options.build_hl else "OFF"
 
-        tc.variables["HDF5_ENABLE_SZIP_SUPPORT"] = (
-            "ON" if self.options.szip_support else "OFF"
-        )
+        tc.variables["HDF5_ENABLE_SZIP_SUPPORT"] = "OFF" 
+        #(
+        #    "ON" if self.options.szip_support else "OFF"
+        #)
 
         # Using an external zlib
         #if self.options.with_zlib:
