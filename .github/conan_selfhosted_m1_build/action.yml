@@ -76,7 +76,7 @@ runs:
 
       shell: bash
       env:
-        BUILD_SHARED: True
+        BUILD_SHARED: 'True'
         CONAN_UPLOAD: https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
         CONAN_LKEB_ARTIFACTORY: lkeb-artifactory
         CC: ${{inputs.conan-cc}}
