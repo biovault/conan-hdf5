@@ -34,18 +34,12 @@ class HDF5Conan(ConanFile):
     options = {
         "shared": [True, False],
         "cxx": [True, False],
-        "parallel": [True, False],
-        "with_zlib": [True, False],
-        "szip_support": [True, False],
-        "build_hl": [True, False],
+        "parallel": [True, False]
     }
     default_options = (
-        "shared=False",
+        "shared=True",
         "cxx=True",
-        "parallel=False",
-        "with_zlib=True",
-        "szip_support=False",
-        "build_hl=False",
+        "parallel=False"
     )
 
     short_paths = True
@@ -100,10 +94,10 @@ class HDF5Conan(ConanFile):
             del self.options.fPIC
 
     def requirements(self):
-        if self.options.with_zlib:
-            self.requires("zlib/1.2.11")
-        if self.options.szip_support:
-            self.requires("szip/2.1.1")
+        #if self.options.with_zlib:
+        self.requires("zlib/1.2.11")
+        # if self.options.szip_support:
+        #    self.requires("szip/2.1.1")
         if self.options.parallel:
             self.requires("openmpi/4.1.0")
 
@@ -149,8 +143,8 @@ class HDF5Conan(ConanFile):
         )
 
         # Using an external zlib
-        if self.options.with_zlib:
-            tc.variables["HDF5_ENABLE_Z_LIB_SUPPORT"] = "ON"
+        #if self.options.with_zlib:
+        tc.variables["HDF5_ENABLE_Z_LIB_SUPPORT"] = "ON"
         #    tc.variables["HDF5_ALLOW_EXTERNAL_SUPPORT"] = "GIT"
         #    tc.variables["ZLIB_URL"] = "https://github.com/madler/zlib"
         #    tc.variables["ZLIB_BRANCH"] = "tags/v1.2.13"
@@ -316,7 +310,7 @@ class HDF5Conan(ConanFile):
             # 1 Append d to debug lib files
             # 2 Copy all directories to <hdps packaging>/deps/zlib https://docs.python.org/3/library/shutil.html#shutil.copytree
             # 3 Define a ZLIB_ROOT variable as <hdps packaging>/deps/zlib (allows find_package(ZLIB))
-            if self.options.with_zlib:
+            if True:   # self.options.with_zlib:
                 print("packaging release zlib")
                 shutil.copytree(Path(libpath_dict["zlib"]), Path(package_dir, "zlib"))
 
