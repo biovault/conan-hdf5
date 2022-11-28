@@ -88,6 +88,9 @@ class HDF5Conan(ConanFile):
         if self.options.cxx and self.options.parallel:
             msg = "The cxx and parallel options are not compatible"
             raise ConanException(msg)
+        if not self.settings.compiler == "Visual Studio":
+            self.options["zlib"].fPIC = True
+        self.options["zlib"].shared = False
 
     def config_options(self):
         if self.settings.compiler == "Visual Studio":
