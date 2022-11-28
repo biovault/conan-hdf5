@@ -37,7 +37,7 @@ jobs:
 
           # Using self hosted runer
           - name: Macos_xcode12.4
-            os: [self-hosted, macOS, arm64]
+            os: [self-hosted, macOS, X64]
             build-compiler: apple-clang
             build-cversion: "12.0"
             build-config: Release
@@ -103,7 +103,7 @@ jobs:
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
 
       - name: Mac M1 build self-hosted
-        if: "contains(matrix.os, 'macOS') && contains(matrix.os, 'self-hosted') && contains(matrix.os, 'arm64') "
+        if: "contains(matrix.os, 'macOS') && contains(matrix.os, 'self-hosted') && contains(matrix.os, 'X64') "
         uses: ./.github/conan_selfhosted_m1_build
         with:
           conan-compiler: ${{matrix.build-compiler}}
