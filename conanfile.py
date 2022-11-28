@@ -101,7 +101,7 @@ class HDF5Conan(ConanFile):
 
     def requirements(self):
         if self.options.with_zlib:
-            self.requires("zlib/1.2.13")
+            self.requires("zlib/1.2.11")
         if self.options.szip_support:
             self.requires("szip/2.1.1")
         if self.options.parallel:
