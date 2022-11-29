@@ -154,6 +154,8 @@ class HDF5Conan(ConanFile):
         # Using an external zlib
         if self.options.with_zlib:
             tc.variables["HDF5_ENABLE_Z_LIB_SUPPORT"] = "ON"
+            tc.variables["CMAKE_PREFIX_PATH"] = self.deps_cpp_info["zlib"]
+            print(f"Adding zlib : {self.deps_cpp_info['zlib']} to the cmake prefix path")
 
         tc.variables["HDF5_BUILD_EXAMPLES"] = "OFF"
         tc.variables["HDF5_BUILD_UTILS"] = "OFF"
