@@ -34,12 +34,18 @@ class HDF5Conan(ConanFile):
     options = {
         "shared": [True, False],
         "cxx": [True, False],
-        "parallel": [True, False]
+        "parallel": [True, False],
+        "with_zlib": [True, False],
+        "szip_support": [True, False],
+        "build_hl": [True, False]
     }
     default_options = (
         "shared=True",
         "cxx=True",
-        "parallel=False"
+        "parallel=False",
+        "with_zlib=True",
+        "szip_support=False",
+        "build_hl=False"
     )
 
     short_paths = True
@@ -97,10 +103,10 @@ class HDF5Conan(ConanFile):
             del self.options.fPIC
 
     def requirements(self):
-        #if self.options.with_zlib:
-        self.requires("zlib/1.2.11")
-        # if self.options.szip_support:
-        #    self.requires("szip/2.1.1")
+        if self.options.with_zlib:
+            self.requires("zlib/1.2.11")
+        if self.options.szip_support:
+            self.requires("szip/2.1.1")
         if self.options.parallel:
             self.requires("openmpi/4.1.0")
 
@@ -141,17 +147,13 @@ class HDF5Conan(ConanFile):
         tc.variables["HDF5_BUILD_HL_LIB"] = "ON" if self.options.build_hl else "OFF"
         tc.variables["HDF5_BUILDHL_TOOLS"] = "ON" if self.options.build_hl else "OFF"
 
-        tc.variables["HDF5_ENABLE_SZIP_SUPPORT"] = "OFF" 
-        #(
-        #    "ON" if self.options.szip_support else "OFF"
-        #)
+        tc.variables["HDF5_ENABLE_SZIP_SUPPORT"] = (
+            "ON" if self.options.szip_support else "OFF"
+        )
 
         # Using an external zlib
-        #if self.options.with_zlib:
-        tc.variables["HDF5_ENABLE_Z_LIB_SUPPORT"] = "ON"
-        #    tc.variables["HDF5_ALLOW_EXTERNAL_SUPPORT"] = "GIT"
-        #    tc.variables["ZLIB_URL"] = "https://github.com/madler/zlib"
-        #    tc.variables["ZLIB_BRANCH"] = "tags/v1.2.13"
+        if self.options.with_zlib:
+            tc.variables["HDF5_ENABLE_Z_LIB_SUPPORT"] = "ON"
 
         tc.variables["HDF5_BUILD_EXAMPLES"] = "OFF"
         tc.variables["HDF5_BUILD_UTILS"] = "OFF"
