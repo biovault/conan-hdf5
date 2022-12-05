@@ -151,15 +151,16 @@ class HDF5Conan(ConanFile):
             "ON" if self.options.szip_support else "OFF"
         )
 
-        # Using an external zlib
+        # Using an external zlib (from conan repo) - Note: also need to set an environment variable (see build())
         if self.options.with_zlib:
-            tc.variables["HDF5_ENABLE_Z_LIB_SUPPORT"] = "ON"
-            tc.variables["CMAKE_PREFIX_PATH"] = self.deps_cpp_info["zlib"]
-            print(f"Adding zlib : {self.deps_cpp_info['zlib']} to the cmake prefix path")
+            tc.variables["ZLIB_USE_EXTERNAL"] = "OFF"
+            tc.variables["ZLIB_INCLUDE_DIR"] = str(Path(self.deps_cpp_info['zlib'].rootpath, "include").as_posix())
+            tc.variables["ZLIB_LIBRARY"] = str(Path(self.deps_cpp_info['zlib'].rootpath, "lib", "libz.a").as_posix())
 
         tc.variables["HDF5_BUILD_EXAMPLES"] = "OFF"
         tc.variables["HDF5_BUILD_UTILS"] = "OFF"
         tc.variables["HDF5_BUILD_TOOLS"] = "OFF"
+        tc.variables["HDF5_PACKAGE_EXTLIBS"] = "OFF"
 
         if (
             self.settings.build_type == "Debug"
@@ -215,6 +216,9 @@ class HDF5Conan(ConanFile):
     def build(self):
 
         print(f"zlib rootpath: {Path(self.deps_cpp_info['zlib'].rootpath).as_posix()}")
+
+        if self.options.with_zlib:
+            os.environ['ZLIB_ROOT'] = str(Path(self.deps_cpp_info['zlib'].rootpath).as_posix())
 
         # Until we know exactly which  dlls are needed just build release
         cmake_debug = self._configure_cmake()
@@ -300,8 +304,6 @@ class HDF5Conan(ConanFile):
             ]
         )
 
-        self.copy(pattern="*", src=package_dir)
-
         libpath_folder = Path(__file__).parent.resolve()
         print(f"check export folder {str(libpath_folder)} for libpaths")
         # package the requirements if they are found
@@ -342,6 +344,7 @@ class HDF5Conan(ConanFile):
                 """
                 files.save(self, Path(zlib_cmake_path), contentstr)
 
+        self.copy(pattern="*", src=package_dir)
 
 if __name__ == "__main__":
     """
@@ -369,7 +372,13 @@ if __name__ == "__main__":
         f"-pr:h={args.host_profile_name}",
         "--build=never",
     ]
-    subprocess.run(installCmd)
+
+    # Install Debug
+    releaseInstallCmd = installCmd + [
+        "-s:h",
+        "build_type=Release",
+    ]
+    subprocess.run(releaseInstallCmd)
 
     # Install Debug
     debugInstallCmd = installCmd + [
@@ -403,8 +412,9 @@ if __name__ == "__main__":
             f"-pr:b={args.build_profile_name}",
             f"-pr:h={args.host_profile_name}",
         ]
+        releaseInfoCmd = infoCmd + ["-s:h", "build_type=Release"]
         res = subprocess.run(
-            infoCmd,
+            releaseInfoCmd,
             capture_output=True,
             text=True,
         )
