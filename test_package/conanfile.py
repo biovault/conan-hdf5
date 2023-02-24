@@ -9,9 +9,12 @@ from pathlib import Path
 class Hdf5TestConan(ConanFile):
     name = "Hdf5PackageTest"
     settings = "os", "compiler", "build_type", "arch"
-    generators = "CMakeDeps"
+    generators = "CMakeDeps", "CMakeToolchain"
     requires = "hdf5/1.12.1"
     exports = "CMakeLists.txt", "hdf5example.cpp"
+
+    def requirements(self):
+        self.requires(self.tested_reference_str)
 
     def generate(self):
         print("Generating toolchain")

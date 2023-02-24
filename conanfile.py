@@ -133,12 +133,16 @@ class HDF5Conan(ConanFile):
             generator = "Ninja Multi-Config"
 
         tc = CMakeToolchain(self, generator=generator)
+        tc.variables[
+            "HDF5_EXTERNALLY_CONFIGURED"
+        ] = "OFF"  # ensure CMake config generation
         tc.variables["BUILD_TESTING"] = "OFF"
         tc.variables["BUILD_EXAMPLES"] = "OFF"
-        tc.variables["BUILD_SHARED_LIBS"] = "TRUE" if self.options.shared else "FALSE"
+        tc.variables["BUILD_SHARED_LIBS"] = "ON" if self.options.shared else "OFF"
 
         # HDF5 options
         tc.variables["HDF5_BUILD_CPP_LIB"] = "ON" if self.options.cxx else "OFF"
+        tc.variables["HDF5_BUILD_FORTRAN"] = "OFF"
         tc.variables["HDF5_ENABLE_PARALLEL"] = "ON" if self.options.parallel else "OFF"
 
         tc.variables["HDF5_BUILD_HL_LIB"] = "ON" if self.options.build_hl else "OFF"
@@ -147,7 +151,7 @@ class HDF5Conan(ConanFile):
         tc.variables["HDF5_ENABLE_SZIP_SUPPORT"] = (
             "ON" if self.options.szip_support else "OFF"
         )
-
+        tc.variables["HDF5_ENABLE_DEBUG_APIS"] = "OFF"
         # Using an external zlib
         if self.options.with_zlib:
             tc.variables["HDF5_ENABLE_Z_LIB_SUPPORT"] = "ON"
@@ -158,12 +162,16 @@ class HDF5Conan(ConanFile):
         tc.variables["HDF5_BUILD_EXAMPLES"] = "OFF"
         tc.variables["HDF5_BUILD_UTILS"] = "OFF"
         tc.variables["HDF5_BUILD_TOOLS"] = "OFF"
+        tc.variables["HDF5_ENABLE_EMBEDDED_LIBINFO"] = "OFF"
+        tc.variables["HDF5_ENABLE_HSIZET"] = "OFF"
+        # tc.variables["PREFIX"] = "hdf5"
+        # tc.variables["HDF5_PREFIX"] = "hdf5"
 
-        if (
-            self.settings.build_type == "Debug"
-            and self.settings.compiler == "Visual Studio"
-        ):
+        if self.settings.compiler == "Visual Studio":
             tc.variables["CMAKE_DEBUG_POSTFIX"] = "_d"
+            tc.variables[
+                "CMAKE_MSVC_RUNTIME_LIBRARY"
+            ] = "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
 
         # Make sure all paths are Posix to avoid escape character issues
         if self.settings.os == "Macos":
@@ -177,8 +185,7 @@ class HDF5Conan(ConanFile):
             Path(self.build_folder, "install").as_posix()
         )
 
-        if self.settings.os == "Linux":
-            tc.variables["CMAKE_CONFIGURATION_TYPES"] = "Debug;Release"
+        tc.variables["CMAKE_CONFIGURATION_TYPES"] = "Debug;Release"
 
         return tc
 
@@ -198,7 +205,7 @@ class HDF5Conan(ConanFile):
         )  # build_script_folder=str(PureWindowsPath(self.source_subfolder))
         return cmake
 
-    def _do_build(self, cmake, build_type):
+    def _do_build(self, cmake, build_type, cli_args=None):
         # if self.settings.os == "Macos":
         # run_environment does not work here because it appends path just from
         # requirements, not from this package itself
@@ -207,8 +214,8 @@ class HDF5Conan(ConanFile):
         #    self.run(
         #        f"DYLD_LIBRARY_PATH={lib_path} cmake --build build {cmake.build_config} -j"
         #    )
-        cmake.build(build_type=build_type)
-        cmake.install(build_type=build_type)
+        cmake.build(build_type=build_type, cli_args=cli_args)
+        # cmake.install(build_type=build_type)
 
     def build(self):
 
@@ -216,10 +223,10 @@ class HDF5Conan(ConanFile):
 
         # Until we know exactly which  dlls are needed just build release
         cmake_debug = self._configure_cmake()
-        self._do_build(cmake_debug, "Debug")
+        self._do_build(cmake_debug, "Debug", ["--verbose"])
 
         cmake_release = self._configure_cmake()
-        self._do_build(cmake_release, "Release")
+        self._do_build(cmake_release, "Release", ["--verbose"])
 
     def cmake_fix_macos_sdk_path(self, file_path):
         # Read in the file
@@ -280,9 +287,10 @@ class HDF5Conan(ConanFile):
             ]
         )
         if tools.os_info.is_windows:
-            pdb_dest = Path(package_dir, "pdb")
-            pdb_dest.mkdir()
-            pdb_files = Path(self.build_folder).glob("bin/Debug/*.pdb")
+            # pdb need to be adjacent to lib
+            pdb_dest = Path(package_dir, "lib")
+            # pdb_dest.mkdir()
+            pdb_files = Path(self.build_folder).glob("src/Debug/*.pdb")
             for pfile in pdb_files:
                 shutil.copy(pfile, pdb_dest)
 
