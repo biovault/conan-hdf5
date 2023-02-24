@@ -24,7 +24,7 @@ runs:
     - name: Install conan & build configuration
       run: |
         pip install wheel
-        pip install conan~=1.51.0
+        pip install conan~=1.53.0
         pip install "markupsafe<2.1"
         pip install -Iv cmake>=3.17
         pip install h5py
@@ -77,7 +77,7 @@ runs:
 
       shell: cmd
       env:
-        BUILD_SHARED: True
+        BUILD_SHARED: 'True'
         CONAN_UPLOAD: https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
         CONAN_LKEB_ARTIFACTORY: lkeb-artifactory
 

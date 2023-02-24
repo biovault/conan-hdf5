@@ -35,14 +35,6 @@ runs:
   steps:
     - name: Install conan & build configuration
       run: |
-        pip install wheel
-        pip install conan~=1.53.0
-        # pip install "markupsafe<2.1"
-        pip install -Iv cmake>=3.17
-        # The following is only for the self-hosted M1 with the x64 brew
-        pip install h5py
-        if [[ ${{ inputs.conan-build-os }} == "Linux" ]]; then sudo apt-get install -y ninja-build; fi
-
         export CONAN_CMAKE_PROGRAM=`which cmake`
         echo CMake version:
         cmake --version
@@ -77,9 +69,9 @@ runs:
         conan profile show action_build
         export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
 
-        REM Use the conanfile.py main to install the requirements both Debug & Release
+        # Use the conanfile.py main to install the requirements both Debug & Release
         python conanfile.py action_build action_build
-        REM Build the combined package (hdf5 + requirements in one package)
+        # Build the combined package (hdf5 + requirements in one package)
         conan create . hdf5/1.12.1@lkeb/stable -pr:h action_build -pr:b action_build -s build_type=Release
 
       shell: bash

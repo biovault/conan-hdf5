@@ -13,6 +13,7 @@ jobs:
           - name: Windows
             os: windows-2019
             compiler: msvc-2019
+            host-arch: x64
             build-cversion: 16
             build-runtime: MD
             build-config: Release
@@ -34,6 +35,7 @@ jobs:
           #  build-xcode-version: 10.3
           #  build-libcxx: libc++
 
+          # Using self hosted runer
           - name: Macos_xcode12.4
             os: [self-hosted, macOS, X64]
             build-compiler: apple-clang
@@ -42,9 +44,19 @@ jobs:
             build-os: Macos
             build-xcode-version: 12.4
             build-libcxx: libc++
+
+          # Using github-hosted runner
+          # - name: Macos_xcode12.4
+          #  os: macos-latest
+          #  build-compiler: apple-clang
+          #  build-cversion: "12.0"
+          #  build-config: Release
+          #  build-os: Macos
+          #  build-xcode-version: 12.4
+          #  build-libcxx: libc++
     steps:
       - name: Checkout the source
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: recursive
 
@@ -53,10 +65,13 @@ jobs:
         run: |
           sudo xcode-select -switch /Applications/Xcode_${{matrix.build-xcode-version}}.app
 
+      # Self-hosted runners should have python and other software preconfigured
       - name: Setup python 3 version
-        uses: actions/setup-python@v2
+        if: "!contains(matrix.os, 'self-hosted')" 
+        uses: actions/setup-python@v4
         with:
-          python-version: "3.8"
+          python-version: '3.9'
+          architecture: x64
 
       - name: Setup gcc for Linux
         if: startsWith(runner.os, 'Linux')
@@ -75,9 +90,21 @@ jobs:
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
 
-      - name: Linux Mac build
-        if: "!startsWith(runner.os, 'Windows')"
+      - name: Linux Mac build github hosted
+        if: "!startsWith(runner.os, 'Windows') && !contains(matrix.os, 'self-hosted')"
         uses: ./.github/conan_linuxmac_build
+        with:
+          conan-compiler: ${{matrix.build-compiler}}
+          conan-compiler-version: ${{matrix.build-cversion}}
+          conan-libcxx-version: ${{matrix.build-libcxx}}
+          conan-build-type: ${{matrix.build-config}}
+          conan-build-os: ${{matrix.build-os}}
+          conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
+          conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
+
+      - name: Mac M1 build self-hosted
+        if: "contains(matrix.os, 'macOS') && contains(matrix.os, 'self-hosted') && contains(matrix.os, 'X64') "
+        uses: ./.github/conan_selfhosted_m1_build
         with:
           conan-compiler: ${{matrix.build-compiler}}
           conan-compiler-version: ${{matrix.build-cversion}}
