@@ -290,7 +290,7 @@ class HDF5Conan(ConanFile):
             # pdb need to be adjacent to lib
             pdb_dest = Path(package_dir, "lib")
             # pdb_dest.mkdir()
-            pdb_files = Path(self.build_folder).glob("src/Debug/*.pdb")
+            pdb_files = Path(self.build_folder).glob("bin/Debug/*.pdb")
             for pfile in pdb_files:
                 shutil.copy(pfile, pdb_dest)
 
