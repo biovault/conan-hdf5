@@ -367,7 +367,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Install Release
-    installCmd = [
+    baseInstall = [
         "conan",
         "install",
         ".",
@@ -375,10 +375,16 @@ if __name__ == "__main__":
         f"-pr:h={args.host_profile_name}",
         "--build=never",
     ]
+
+    installCmd = baseInstall + [
+        "-s:h",
+        "build_type=Release",
+    ]
+
     subprocess.run(installCmd)
 
     # Install Debug
-    debugInstallCmd = installCmd + [
+    debugInstallCmd = baseInstall + [
         "-s:h",
         "build_type=Debug",
     ]
