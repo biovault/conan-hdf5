@@ -72,6 +72,19 @@ class HDF5Conan(ConanFile):
             os.rename(self.windows_source_folder, self.source_subfolder)
 
     def export(self):
+        # This requires that libpath JSON files have created by running
+        # python conanfile.py <build_profile> <host_profile>
+        # (see __main__ below)
+        if not (
+            Path("libpath_dict.json").exists()
+            and Path("libpath_debug_dict.json").exists()
+        ):
+            print("****ERROR*** Missing library dict.json files.")
+            print(
+                "Check that: python conanfile.py <build_profile> <host_profile> \n",
+                "was first run successfully in this directory",
+            )
+            exit(1)
         print(f"export folder {self.export_folder}")
         for jf in Path(".").glob("libpath*.json"):
             print(f"JSON {jf}")
@@ -194,12 +207,20 @@ class HDF5Conan(ConanFile):
         tc = self._get_tc()
         tc.generate()
         deps = CMakeDeps(self)
+        # print(f"Dependency libs {self.deps_cpp_info.libs}")
+        # for item in deps.content.items():
+        #     print(f"Generator files {item}")
+        deps.configuration = "Release"
+        deps.generate()
+        deps.configuration = "Debug"
         deps.generate()
 
     def _configure_cmake(self):
         cmake = CMake(self)
         build_path = Path(self.source_subfolder) / f"hdf5-{self.version}"
-        print(f"source path {str(build_path)}")
+        print(
+            f"source path (relative to {cmake._conanfile.source_folder}) {str(build_path)}"
+        )
         cmake.configure(
             build_script_folder=str(build_path)
         )  # build_script_folder=str(PureWindowsPath(self.source_subfolder))
@@ -317,8 +338,10 @@ class HDF5Conan(ConanFile):
         ):
             with open(Path(libpath_folder, "libpath_dict.json"), "r") as f:
                 libpath_dict = json.load(f)
+                print(f"{libpath_dict}")
             with open(Path(libpath_folder, "libpath_debug_dict.json"), "r") as f:
                 libpath_debug_dict = json.load(f)
+                print(f"{libpath_debug_dict}")
 
             # Merge debug and release zlibs as follows
             # 1 Append d to debug lib files
@@ -366,7 +389,7 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    # Install Release
+    # Install Release dependencies
     baseInstall = [
         "conan",
         "install",
@@ -375,67 +398,68 @@ if __name__ == "__main__":
         f"-pr:h={args.host_profile_name}",
         "--build=never",
     ]
-
     installCmd = baseInstall + [
         "-s:h",
         "build_type=Release",
     ]
+    subprocess.run(
+        installCmd + (["-s:h", "compiler.runtime=MD"] if os.name == "nt" else [])
+    )
 
-    subprocess.run(installCmd)
-
-    # Install Debug
+    # Install Debug dependencies
     debugInstallCmd = baseInstall + [
         "-s:h",
         "build_type=Debug",
     ]
-    if os.name == "nt":
-        debugInstallCmd = debugInstallCmd + ["-s:h", "compiler.runtime=MDd"]
-    subprocess.run(debugInstallCmd)
-
-    # 2) Get list of requirements
-    res = subprocess.run(
-        ["conan", "info", ".", "--build-order=ALL"], capture_output=True, text=True
+    subprocess.run(
+        debugInstallCmd + (["-s:h", "compiler.runtime=MDd"] if os.name == "nt" else [])
     )
 
-    reqs = res.stdout.strip("[]\n").split(",")
+    # 3) For all requirements get the install path
+    # create a release and debug dict containing this information
+    infoCmd = [
+        "conan",
+        "info",
+        "--paths",
+        "--only",
+        "package_folder",
+        ".",
+        f"-pr:b={args.build_profile_name}",
+        f"-pr:h={args.host_profile_name}",
+    ]
 
-    # 3) For each requirement get the install path - create a release and debug dict
-    libpath_dict = {}
-    libpath_debug_dict = {}
-    for req in reqs:
-        infoCmd = [
-            "conan",
-            "info",
-            "--paths",
-            "--package-filter",
-            f"{req}",
-            "--only",
-            "package_folder",
-            ".",
-            f"-pr:b={args.build_profile_name}",
-            f"-pr:h={args.host_profile_name}",
-        ]
-        res = subprocess.run(
-            infoCmd,
-            capture_output=True,
-            text=True,
-        )
-        lib_path = res.stdout.replace("package_folder:", "").split()
-        libpath_dict[req.split("/")[0]] = str(Path(lib_path[1]).as_posix())
+    # 3.1) dict for Release dependencies
+    res = subprocess.run(
+        infoCmd
+        + ["-s:h", "build_type=Release"]
+        + (["-s:h", "compiler.runtime=MD"] if os.name == "nt" else []),
+        capture_output=True,
+        text=True,
+    )
+    # Reduce the conan info output list to array of requirement and package paths
+    # Dropping the last 2 entries (which are the package to be build)
+    req_path_array = [
+        x.strip().replace("package_folder:", "").strip() for x in res.stdout.split("\n")
+    ][0:-2]
+    deps_keys = [x.split("/")[0] for x in req_path_array[0::2]]
+    libpath_dict = dict(zip(deps_keys, req_path_array[1::2]))
 
-        debugInfoCmd = infoCmd + ["-s:h", "build_type=Debug"]
+    # 3.2) dict for Debug dependencies
+    res = subprocess.run(
+        infoCmd
+        + ["-s:h", "build_type=Debug"]
+        + (["-s:h", "compiler.runtime=MDd"] if os.name == "nt" else []),
+        capture_output=True,
+        text=True,
+    )
+    req_path_array = [
+        x.strip().replace("package_folder:", "").strip() for x in res.stdout.split("\n")
+    ][0:-2]
+    deps_keys = [x.split("/")[0] for x in req_path_array[0::2]]
+    libpath_debug_dict = dict(zip(deps_keys, req_path_array[1::2]))
 
-        if os.name == "nt":
-            debugInfoCmd = debugInfoCmd + ["-s:h", "compiler.runtime=MDd"]
-
-        res = subprocess.run(
-            debugInfoCmd,
-            capture_output=True,
-            text=True,
-        )
-        lib_path = res.stdout.replace("package_folder:", "").split()
-        libpath_debug_dict[req.split("/")[0]] = str(Path(lib_path[1]).as_posix())
-
+    # 4) Display the results (for debugging) and save in json format to allow
+    # easy retrieval in the packaging step
     print(libpath_dict)
     print(libpath_debug_dict)
     with open("libpath_dict.json", "w") as f:
