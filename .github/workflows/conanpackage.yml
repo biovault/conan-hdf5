@@ -10,7 +10,7 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: Windows
+          - name: Windows-msvc2019
             os: windows-2019
             compiler: msvc-2019
             host-arch: x64
@@ -37,7 +37,7 @@ jobs:
 
           # Using self hosted runer
           - name: Macos_xcode12.4
-            os: [self-hosted, macOS, X64]
+            os: macos-11
             build-compiler: apple-clang
             build-cversion: "12.0"
             build-config: Release
@@ -67,10 +67,10 @@ jobs:
 
       # Self-hosted runners should have python and other software preconfigured
       - name: Setup python 3 version
-        if: "!contains(matrix.os, 'self-hosted')" 
+        if: "!contains(matrix.os, 'self-hosted')"
         uses: actions/setup-python@v4
         with:
-          python-version: '3.9'
+          python-version: "3.9"
           architecture: x64
 
       - name: Setup gcc for Linux
