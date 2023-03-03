@@ -77,14 +77,14 @@ runs:
         conan profile show action_build
         export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
 
-        REM Use the conanfile.py main to install the requirements both Debug & Release
+        # Use the conanfile.py main to install the requirements both Debug & Release
         python conanfile.py action_build action_build
-        REM Build the combined package (hdf5 + requirements in one package)
+        # Build the combined package (hdf5 + requirements in one package)
         conan create . hdf5/1.12.1@lkeb/stable -pr:h action_build -pr:b action_build -s build_type=Release
 
       shell: bash
       env:
-        BUILD_SHARED: 'True'
+        BUILD_SHARED: "True"
         CONAN_UPLOAD: https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
         CONAN_LKEB_ARTIFACTORY: lkeb-artifactory
         CC: ${{inputs.conan-cc}}
