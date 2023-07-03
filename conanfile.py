@@ -349,7 +349,7 @@ class HDF5Conan(ConanFile):
             # 2 Copy all directories to <hdps packaging>/deps/zlib https://docs.python.org/3/library/shutil.html#shutil.copytree
             # 3 Define a ZLIB_ROOT variable as <hdps packaging>/deps/zlib (allows find_package(ZLIB))
             if self.options.with_zlib:
-                print("packaging release zlib")
+                print(f"packaging release zlib to {package_dir}")
                 shutil.copytree(Path(libpath_dict["zlib"]), Path(package_dir, "zlib"))
 
                 print("packaging debug zlib binaries")

@@ -20,8 +20,10 @@ class Hdf5TestConan(ConanFile):
         print("Generating toolchain")
         tc = CMakeToolchain(self)
         # Use the HDF5 cmake package in the share directory
-        tc.variables["CMAKE_PREFIX_PATH"] = Path(
-            self.deps_cpp_info["hdf5"].rootpath, "share", "cmake"
+        #for attr in dir(self.deps_cpp_info['hdf5']):
+        #    print(f"attr {attr}: {getattr(self.deps_cpp_info['hdf5'], attr)}")
+        tc.variables["HDF5_ROOT"] = Path(
+            self.deps_cpp_info["hdf5"].build_paths[0]
         ).as_posix()
         tc.generate()
         deps = CMakeDeps(self)
