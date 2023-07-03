@@ -17,7 +17,8 @@ import json
 
 class HDF5Conan(ConanFile):
     name = "hdf5"
-    version = "1.12.1"
+    version = "1.14.1"
+    patch_suffix = "-2"
     description = "HDF5 C and C++ libraries"
     url = "http://github.com/biovault/conan-hdf5"
     license = "MIT"
@@ -59,7 +60,7 @@ class HDF5Conan(ConanFile):
         major_minor_version = ".".join(self.version.split(".")[:2])
         if tools.os_info.is_windows:
             tools.download(
-                f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{major_minor_version}/hdf5-{self.version}/src/CMake-hdf5-{self.version}.zip",
+                f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{major_minor_version}/hdf5-{self.version}/src/CMake-hdf5-{self.version}{self.patch_suffix}.zip",
                 self.windows_archive_name,
             )
             tools.unzip(self.windows_archive_name)
@@ -67,7 +68,7 @@ class HDF5Conan(ConanFile):
             os.rename(self.windows_source_folder, self.source_subfolder)
         else:
             tools.get(
-                f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{major_minor_version}/hdf5-{self.version}/src/CMake-hdf5-{self.version}.tar.gz"
+                f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{major_minor_version}/hdf5-{self.version}/src/CMake-hdf5-{self.version}{self.patch_suffix}.tar.gz"
             )
             os.rename(self.windows_source_folder, self.source_subfolder)
 
