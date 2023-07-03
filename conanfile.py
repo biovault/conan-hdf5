@@ -218,7 +218,7 @@ class HDF5Conan(ConanFile):
 
     def _configure_cmake(self):
         cmake = CMake(self)
-        build_path = Path(self.source_subfolder) / f"hdf5-{self.version}"
+        build_path = Path(self.source_subfolder) / f"hdf5-{self.version}{self.patch_suffix}"
         print(
             f"source path (relative to {cmake._conanfile.source_folder}) {str(build_path)}"
         )
