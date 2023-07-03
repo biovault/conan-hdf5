@@ -53,7 +53,7 @@ class HDF5Conan(ConanFile):
 
     version_split = version.split(".")
     short_version = "%s.%s" % (version_split[0], version_split[1])
-    windows_source_folder = f"CMake-hdf5-{version}"
+    windows_source_folder = f"CMake-hdf5-{version}{patch_suffix}"
     windows_archive_name = f"{windows_source_folder}.zip"
 
     def source(self):
