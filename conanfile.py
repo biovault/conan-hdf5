@@ -17,7 +17,7 @@ import json
 
 class HDF5Conan(ConanFile):
     name = "hdf5"
-    version = "1.12.1"
+    version = "1.12.2"
     description = "HDF5 C and C++ libraries"
     url = "http://github.com/biovault/conan-hdf5"
     license = "MIT"
