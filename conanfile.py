@@ -144,7 +144,8 @@ class HDF5Conan(ConanFile):
             generator = "Xcode"
 
         if self.settings.os == "Linux":
-            generator = "Ninja Multi-Config"
+            # generator = "Ninja Multi-Config" waiting for release containing https://github.com/HDFGroup/hdf5/pull/3104#event-9517769647
+            generator = "Unix Makefiles"
 
         tc = CMakeToolchain(self, generator=generator)
         tc.variables[
@@ -211,14 +212,18 @@ class HDF5Conan(ConanFile):
         # print(f"Dependency libs {self.deps_cpp_info.libs}")
         # for item in deps.content.items():
         #     print(f"Generator files {item}")
-        deps.configuration = "Release"
-        deps.generate()
-        deps.configuration = "Debug"
-        deps.generate()
+        if self.settings.os != "Linux" or self.settings.build_type == "Release":
+            deps.configuration = "Release"
+            deps.generate()
+        if self.settings.os != "Linux" or self.settings.build_type == "Debug":
+            deps.configuration = "Debug"
+            deps.generate()
 
     def _configure_cmake(self):
         cmake = CMake(self)
-        build_path = Path(self.source_subfolder) / f"hdf5-{self.version}{self.patch_suffix}"
+        build_path = (
+            Path(self.source_subfolder) / f"hdf5-{self.version}{self.patch_suffix}"
+        )
         print(
             f"source path (relative to {cmake._conanfile.source_folder}) {str(build_path)}"
         )
@@ -240,15 +245,16 @@ class HDF5Conan(ConanFile):
         # cmake.install(build_type=build_type)
 
     def build(self):
-
         print(f"zlib rootpath: {Path(self.deps_cpp_info['zlib'].rootpath).as_posix()}")
 
         # Until we know exactly which  dlls are needed just build release
-        cmake_debug = self._configure_cmake()
-        self._do_build(cmake_debug, "Debug", ["--verbose"])
+        if self.settings.os != "Linux" or self.settings.build_type == "Debug":
+            cmake_debug = self._configure_cmake()
+            self._do_build(cmake_debug, "Debug", ["--verbose"])
 
-        cmake_release = self._configure_cmake()
-        self._do_build(cmake_release, "Release", ["--verbose"])
+        if self.settings.os != "Linux" or self.settings.build_type == "Release":
+            cmake_release = self._configure_cmake()
+            self._do_build(cmake_release, "Release", ["--verbose"])
 
     def cmake_fix_macos_sdk_path(self, file_path):
         # Read in the file
@@ -271,7 +277,8 @@ class HDF5Conan(ConanFile):
 
     # Package has no build type marking
     def package_id(self):
-        del self.info.settings.build_type
+        if self.settings.os != "Linux":
+            del self.info.settings.build_type
         if self.settings.compiler == "Visual Studio":
             del self.info.settings.compiler.runtime
 
@@ -297,52 +304,56 @@ class HDF5Conan(ConanFile):
         # Merge the Debug and Release into a single directory
         package_dir = os.path.join(self.build_folder, "package")
         print("Packaging install dir: ", package_dir)
-        subprocess.run(
-            [
-                "cmake",
-                "--install",
-                self.build_folder,
-                "--config",
-                "Debug",
-                "--prefix",
-                package_dir,
-            ]
-        )
-        if tools.os_info.is_windows:
-            # pdb need to be adjacent to lib
-            pdb_dest = Path(package_dir, "lib")
-            # pdb_dest.mkdir()
-            pdb_files = Path(self.build_folder).glob("bin/Debug/*.pdb")
-            for pfile in pdb_files:
-                shutil.copy(pfile, pdb_dest)
+        if self.settings.os != "Linux" or self.settings.build_type == "Debug":
+            subprocess.run(
+                [
+                    "cmake",
+                    "--install",
+                    self.build_folder,
+                    "--config",
+                    "Debug",
+                    "--prefix",
+                    package_dir,
+                ]
+            )
+            if tools.os_info.is_windows:
+                # pdb need to be adjacent to lib
+                pdb_dest = Path(package_dir, "lib")
+                # pdb_dest.mkdir()
+                pdb_files = Path(self.build_folder).glob("bin/Debug/*.pdb")
+                for pfile in pdb_files:
+                    shutil.copy(pfile, pdb_dest)
 
-        subprocess.run(
-            [
-                "cmake",
-                "--install",
-                self.build_folder,
-                "--config",
-                "Release",
-                "--prefix",
-                package_dir,
-            ]
-        )
+        if self.settings.os != "Linux" or self.settings.build_type == "Release":
+            subprocess.run(
+                [
+                    "cmake",
+                    "--install",
+                    self.build_folder,
+                    "--config",
+                    "Release",
+                    "--prefix",
+                    package_dir,
+                ]
+            )
 
-        self.copy(pattern="*", src=package_dir)
+            self.copy(pattern="*", src=package_dir)
 
         libpath_folder = Path(__file__).parent.resolve()
         print(f"check export folder {str(libpath_folder)} for libpaths")
         # package the requirements if they are found
         if (
             Path(libpath_folder, "libpath_dict.json").exists()
-            and Path(libpath_folder, "libpath_debug_dict.json").exists()
+            or Path(libpath_folder, "libpath_debug_dict.json").exists()
         ):
-            with open(Path(libpath_folder, "libpath_dict.json"), "r") as f:
-                libpath_dict = json.load(f)
-                print(f"{libpath_dict}")
-            with open(Path(libpath_folder, "libpath_debug_dict.json"), "r") as f:
-                libpath_debug_dict = json.load(f)
-                print(f"{libpath_debug_dict}")
+            if Path(libpath_folder, "libpath_dict.json").exists():
+                with open(Path(libpath_folder, "libpath_dict.json"), "r") as f:
+                    libpath_dict = json.load(f)
+                    print(f"{libpath_dict}")
+            if Path(libpath_folder, "libpath_debug_dict.json").exists():
+                with open(Path(libpath_folder, "libpath_debug_dict.json"), "r") as f:
+                    libpath_debug_dict = json.load(f)
+                    print(f"{libpath_debug_dict}")
 
             # Merge debug and release zlibs as follows
             # 1 Append d to debug lib files

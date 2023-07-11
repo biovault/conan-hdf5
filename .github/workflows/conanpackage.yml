@@ -98,9 +98,21 @@ jobs:
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
 
-      - name: Linux Mac build github hosted
-        if: "!startsWith(runner.os, 'Windows') && !contains(matrix.os, 'self-hosted')"
+      - name: Mac build github hosted
+        if: "if: startsWith(runner.os, 'Macos') && !contains(matrix.os, 'self-hosted')"
         uses: ./.github/conan_linuxmac_build
+        with:
+          conan-compiler: ${{matrix.build-compiler}}
+          conan-compiler-version: ${{matrix.build-cversion}}
+          conan-libcxx-version: ${{matrix.build-libcxx}}
+          conan-build-type: ${{matrix.build-config}}
+          conan-build-os: ${{matrix.build-os}}
+          conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
+          conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
+
+      - name: Linux build github hosted
+        if: "if: startsWith(runner.os, 'Linux') && !contains(matrix.os, 'self-hosted')"
+        uses: ./.github/conan_linux_build
         with:
           conan-compiler: ${{matrix.build-compiler}}
           conan-compiler-version: ${{matrix.build-cversion}}
