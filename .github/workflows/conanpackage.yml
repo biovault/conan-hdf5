@@ -99,7 +99,7 @@ jobs:
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
 
       - name: Mac build github hosted
-        if: "startsWith(runner.os, 'Macos') && !contains(matrix.os, 'self-hosted')"
+        if: startsWith(runner.os, 'Macos') && !contains(matrix.os, 'self-hosted')
         uses: ./.github/conan_linuxmac_build
         with:
           conan-compiler: ${{matrix.build-compiler}}
@@ -111,7 +111,7 @@ jobs:
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
 
       - name: Linux build github hosted
-        if: "startsWith(runner.os, 'Linux') && !contains(matrix.os, 'self-hosted')"
+        if: startsWith(runner.os, 'Linux') && !contains(matrix.os, 'self-hosted')
         uses: ./.github/conan_linux_build
         with:
           conan-compiler: ${{matrix.build-compiler}}
