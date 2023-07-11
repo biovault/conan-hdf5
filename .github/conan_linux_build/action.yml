@@ -92,7 +92,7 @@ runs:
         CXX: ${{inputs.conan-cxx}}
 
     - name: Build release and upload
-      run |
+      run: |
         export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
 
         # Use the conanfile.py main to install the requirements both Debug & Release
@@ -110,7 +110,7 @@ runs:
         CXX: ${{inputs.conan-cxx}}
 
     - name: Build debug and upload
-      run |
+      run: |
         export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
 
         # Use the conanfile.py main to install the requirements both Debug & Release
