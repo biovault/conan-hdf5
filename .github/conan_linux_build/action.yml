@@ -104,8 +104,8 @@ runs:
         export CONAN_USER_HOME=`pwd`/_conan
         # echo Add LKEB artifactory as remote
         # conan remote add $CONAN_LKEB_ARTIFACTORY $CONAN_UPLOAD
-        echo Add upload user
-        conan user -r $CONAN_LKEB_ARTIFACTORY -p ${{ inputs.conan-password }} ${{ inputs.conan-user }}
+        # echo Add upload user
+        # conan user -r $CONAN_LKEB_ARTIFACTORY -p ${{ inputs.conan-password }} ${{ inputs.conan-user }}
         export CONAN_PACKAGE_NAME=`conan inspect --raw name conanfile.py`
 
         conan profile new action_build
