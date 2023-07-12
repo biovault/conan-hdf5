@@ -302,6 +302,13 @@ class HDF5Conan(ConanFile):
 
     def package(self):
         # Merge the Debug and Release into a single directory
+        # except for Linux where separate Debug and Release packages are
+        # created due to Ninja issues
+        # System:
+        # 1) create a package directory
+        # 2) install debug  and release to that dir
+        # 3) Add the zlib dependency
+        # 4) complete the packaging
         package_dir = os.path.join(Path(self.build_folder).parents[0], "package")
         Path(package_dir).mkdir()
         print("Packaging install dir: ", package_dir)
