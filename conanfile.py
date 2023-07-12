@@ -302,7 +302,7 @@ class HDF5Conan(ConanFile):
 
     def package(self):
         # Merge the Debug and Release into a single directory
-        package_dir = os.path.join(Path(self.build_folder).parents[1])
+        package_dir = os.path.join(Path(self.build_folder).parents[0])
         print("Packaging install dir: ", package_dir)
         if self.settings.os != "Linux" or self.settings.build_type == "Debug":
             subprocess.run(
