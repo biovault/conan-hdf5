@@ -63,7 +63,7 @@ class HDF5Conan(ConanFile):
                 f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{major_minor_version}/hdf5-{self.version}/src/CMake-hdf5-{self.version}{self.patch_suffix}.zip",
                 self.windows_archive_name,
             )
-            tools.unzip(self.windows_archive_name)
+            tools.unzip(self.windows_archive_name, strip_root=True) # Remove the root dir in this version 1.4.2
             os.unlink(self.windows_archive_name)
             os.rename(self.windows_source_folder, self.source_subfolder)
         else:
