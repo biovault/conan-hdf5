@@ -17,8 +17,8 @@ import json
 
 class HDF5Conan(ConanFile):
     name = "hdf5"
-    version = "1.14.1"
-    patch_suffix = "-2"
+    version = "1.14.2"
+    patch_suffix = ""
     description = "HDF5 C and C++ libraries"
     url = "http://github.com/biovault/conan-hdf5"
     license = "MIT"
@@ -144,8 +144,8 @@ class HDF5Conan(ConanFile):
             generator = "Xcode"
 
         if self.settings.os == "Linux":
-            # generator = "Ninja Multi-Config" waiting for release containing https://github.com/HDFGroup/hdf5/pull/3104#event-9517769647
-            generator = "Unix Makefiles"
+            generator = "Ninja Multi-Config"
+            # generator = "Unix Makefiles"
 
         tc = CMakeToolchain(self, generator=generator)
         tc.variables[
