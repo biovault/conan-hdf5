@@ -345,8 +345,8 @@ class HDF5Conan(ConanFile):
                 ]
             )
 
-        self.copy(pattern="*", src=package_dir)
 
+        # add dependencies to the packing dir before copying to package
         libpath_folder = Path(__file__).parent.resolve()
         print(f"check export folder {str(libpath_folder)} for libpaths")
         # package the requirements if they are found
@@ -385,12 +385,13 @@ class HDF5Conan(ConanFile):
                 # Add ZLIB_ROOT to package
                 # define content for hdf5-targets-zlib.cmake
                 zlib_cmake_path = Path(
-                    package_dir, "share", "cmake", "hdf5", "hdf5-targets-zlib.cmake"
+                    package_dir, "cmake", "hdf5-targets-zlib.cmake"
                 )
                 contentstr = """set(HDF5_ZLIB_ROOT,  "${_IMPORT_PREFIX}/zlib")
                 """
                 files.save(self, Path(zlib_cmake_path), contentstr)
 
+        self.copy(pattern="*", src=package_dir)
 
 if __name__ == "__main__":
     """
