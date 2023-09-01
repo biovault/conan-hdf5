@@ -103,6 +103,8 @@ jobs:
           conan-build-os: ${{matrix.build-os}}
           conan-user: ${{secrets.LKEB_ARTIFACTORY_USER}}
           conan-password: ${{secrets.LKEB_ARTIFACTORY_PASSWORD}}
+          conan-cc: gcc-${{matrix.build-cversion}}
+          conan-cxx: g++-${{matrix.build-cversion}}
 
       - name: Mac M1 build self-hosted
         if: "contains(matrix.os, 'macOS') && contains(matrix.os, 'self-hosted') && contains(matrix.os, 'X64') "

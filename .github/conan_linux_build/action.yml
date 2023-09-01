@@ -99,26 +99,3 @@ runs:
         CC: ${{inputs.conan-cc}}
         CXX: ${{inputs.conan-cxx}}
 
-    - name: Build debug and upload
-      run: |
-        export CONAN_USER_HOME=`pwd`/_conan
-        export CONAN_PACKAGE_NAME=`conan inspect --raw name conanfile.py`
-        export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
-
-        # Use the conanfile.py main to install the requirements both Debug & Release
-        python conanfile.py action_build action_build
-
-        export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
-
-        conan create . hdf5/1.14.2@lkeb/stable -pr:h action_build -pr:b action_build -s build_type=Debug
-        export CONAN_USER_HOME=`pwd`/_conan
-        export CONAN_PACKAGE_NAME=`conan inspect --raw name conanfile.py`
-        export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
-        conan upload --all --force --confirm -r $CONAN_LKEB_ARTIFACTORY $CONAN_PACKAGE_NAME/*
-      shell: bash
-      env:
-        BUILD_SHARED: "True"
-        CONAN_UPLOAD: https://lkeb-artifactory.lumc.nl/artifactory/api/conan/conan-local
-        CONAN_LKEB_ARTIFACTORY: lkeb-artifactory
-        CC: ${{inputs.conan-cc}}
-        CXX: ${{inputs.conan-cxx}}
