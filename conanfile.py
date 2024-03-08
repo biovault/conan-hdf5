@@ -11,6 +11,7 @@ from pathlib import Path
 import shutil
 import argparse
 import json
+import platform
 
 # derived from https://github.com/conan-io/conan-center-index/blob/master/recipes/hdf5/all/conanfile.py
 
@@ -411,6 +412,18 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
+    modify_comp_version_13 = False
+    if platform.system() == 'Darwin':
+        print('checking compiler versioning')
+        p = subprocess.run(['conan', 'profile', 'show', f'{args.build_profile_name}'], capture_output=True, encoding='utf-8')
+        if p.stdout is not None:
+            print(f'config: {p.stdout}')
+            if 'compiler.version=13\n' in p.stdout:
+                modify_comp_version_13 = True
+                print(f'Will modify comp version in {p.stdout}')
+        else:
+            print(f'No profile {args.build_profile_name}')
+
     # Install Release dependencies
     baseInstall = [
         "conan",
@@ -424,6 +437,7 @@ if __name__ == "__main__":
         "-s:h",
         "build_type=Release",
     ]
+
     subprocess.run(
         installCmd + (["-s:h", "compiler.runtime=MD"] if os.name == "nt" else [])
     )
@@ -432,59 +446,80 @@ if __name__ == "__main__":
     debugInstallCmd = baseInstall + [
         "-s:h",
         "build_type=Debug",
+
     ]
-    subprocess.run(
-        debugInstallCmd + (["-s:h", "compiler.runtime=MDd"] if os.name == "nt" else [])
-    )
+    try:
+        if modify_comp_version_13:
+            subprocess.run([
+                "conan", 
+                "profile", 
+                "update", 
+                "settings.compiler.version=13.0", 
+                f"{args.host_profile_name}"
+            ])
 
-    # 3) For all requirements get the install path
-    # create a release and debug dict containing this information
-    infoCmd = [
-        "conan",
-        "info",
-        "--paths",
-        "--only",
-        "package_folder",
-        ".",
-        f"-pr:b={args.build_profile_name}",
-        f"-pr:h={args.host_profile_name}",
-    ]
+        subprocess.run(
+            debugInstallCmd + (["-s:h", "compiler.runtime=MDd"] if os.name == "nt" else [])
+        )
 
-    # 3.1) dict for Release dependencies
-    res = subprocess.run(
-        infoCmd
-        + ["-s:h", "build_type=Release"]
-        + (["-s:h", "compiler.runtime=MD"] if os.name == "nt" else []),
-        capture_output=True,
-        text=True,
-    )
-    # Reduce the conan info output list to array of requirement and package paths
-    # Dropping the last 2 entries (which are the package to be build)
-    req_path_array = [
-        x.strip().replace("package_folder:", "").strip() for x in res.stdout.split("\n")
-    ][0:-2]
-    deps_keys = [x.split("/")[0] for x in req_path_array[0::2]]
-    libpath_dict = dict(zip(deps_keys, req_path_array[1::2]))
+        # 3) For all requirements get the install path
+        # create a release and debug dict containing this information
+        infoCmd = [
+            "conan",
+            "info",
+            "--paths",
+            "--only",
+            "package_folder",
+            ".",
+            f"-pr:b={args.build_profile_name}",
+            f"-pr:h={args.host_profile_name}",
+        ]
 
-    # 3.2) dict for Debug dependencies
-    res = subprocess.run(
-        infoCmd
-        + ["-s:h", "build_type=Debug"]
-        + (["-s:h", "compiler.runtime=MDd"] if os.name == "nt" else []),
-        capture_output=True,
-        text=True,
-    )
-    req_path_array = [
-        x.strip().replace("package_folder:", "").strip() for x in res.stdout.split("\n")
-    ][0:-2]
-    deps_keys = [x.split("/")[0] for x in req_path_array[0::2]]
-    libpath_debug_dict = dict(zip(deps_keys, req_path_array[1::2]))
+        # 3.1) dict for Release dependencies
+        res = subprocess.run(
+            infoCmd
+            + ["-s:h", "build_type=Release"]
+            + (["-s:h", "compiler.runtime=MD"] if os.name == "nt" else []),
+            capture_output=True,
+            text=True,
+        )
+        # Reduce the conan info output list to array of requirement and package paths
+        # Dropping the last 2 entries (which are the package to be build)
+        req_path_array = [
+            x.strip().replace("package_folder:", "").strip() for x in res.stdout.split("\n")
+        ][0:-2]
+        deps_keys = [x.split("/")[0] for x in req_path_array[0::2]]
+        libpath_dict = dict(zip(deps_keys, req_path_array[1::2]))
 
-    # 4) Display the results (for debugging) and save in json format to allow
-    # easy retrieval in the packaging step
-    print(libpath_dict)
-    print(libpath_debug_dict)
-    with open("libpath_dict.json", "w") as f:
-        json.dump(libpath_dict, f)
-    with open("libpath_debug_dict.json", "w") as f:
-        json.dump(libpath_debug_dict, f)
+        # 3.2) dict for Debug dependencies
+        res = subprocess.run(
+            infoCmd
+            + ["-s:h", "build_type=Debug"]
+            + (["-s:h", "compiler.runtime=MDd"] if os.name == "nt" else []),
+            capture_output=True,
+            text=True,
+        )
+        req_path_array = [
+            x.strip().replace("package_folder:", "").strip() for x in res.stdout.split("\n")
+        ][0:-2]
+        deps_keys = [x.split("/")[0] for x in req_path_array[0::2]]
+        libpath_debug_dict = dict(zip(deps_keys, req_path_array[1::2]))
+
+        # 4) Display the results (for debugging) and save in json format to allow
+        # easy retrieval in the packaging step
+        print(libpath_dict)
+        print(libpath_debug_dict)
+        with open("libpath_dict.json", "w") as f:
+            json.dump(libpath_dict, f)
+        with open("libpath_debug_dict.json", "w") as f:
+            json.dump(libpath_debug_dict, f)
+    finally:
+        if modify_comp_version_13:
+            subprocess.run([
+                "conan", 
+                "profile", 
+                "update", 
+                "settings.compiler.version=13", 
+                f"{args.host_profile_name}"
+            ])
+
