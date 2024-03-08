@@ -53,7 +53,8 @@ class HDF5Conan(ConanFile):
 
     version_split = version.split(".")
     short_version = "%s.%s" % (version_split[0], version_split[1])
-    windows_source_folder = f"CMake-hdf5-{version}{patch_suffix}"
+    windows_source_folder = f"hdf5-{version}{patch_suffix}"
+    linux_source_folder = f"CMake-hdf5-{version}{patch_suffix}"
     windows_archive_name = f"{windows_source_folder}.zip"
 
     def source(self):
@@ -70,7 +71,7 @@ class HDF5Conan(ConanFile):
             tools.get(
                 f"https://support.hdfgroup.org/ftp/HDF5/releases/hdf5-{major_minor_version}/hdf5-{self.version}/src/CMake-hdf5-{self.version}{self.patch_suffix}.tar.gz"
             )
-            os.rename(self.windows_source_folder, self.source_subfolder)
+            os.rename(self.linux_source_folder, self.source_subfolder)
 
     def export(self):
         # This requires that libpath JSON files have created by running
