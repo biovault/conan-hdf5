@@ -78,7 +78,7 @@ runs:
 
         if [[ ${{ inputs.conan-build-os }} == "Macos" ]]; then
           conan profile new compatibility
-          conan profile update settings.zlib/1.2.13:compiler.version=13 compatibility
+          conan profile update settings.zlib/1.2.13:compiler.version=13.0 compatibility
         fi
 
         export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
