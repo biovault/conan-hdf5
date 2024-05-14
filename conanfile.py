@@ -411,7 +411,7 @@ if __name__ == "__main__":
         "host_profile_name", type=str, help="Name of the conan profile used for host"
     )
     parser.add_argument(
-        "compatibility_profile", type=str, help="Name of the optional compatibility profile"
+        "--compatibility_profile", type=str, help="Name of the optional compatibility profile"
     )
     args = parser.parse_args()
 
