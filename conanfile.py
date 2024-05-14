@@ -410,6 +410,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "host_profile_name", type=str, help="Name of the conan profile used for host"
     )
+    parser.add_argument(
+        "compatibility_profile", type=str, help="Name of the optional compatibility profile"
+    )
     args = parser.parse_args()
 
     modify_comp_version_13 = False
@@ -438,6 +441,9 @@ if __name__ == "__main__":
         "build_type=Release",
     ]
 
+    if args.compatibility_profile: 
+        installCmd += ["-pr", f"{args.compatibility_profile}"]
+
     subprocess.run(
         installCmd + (["-s:h", "compiler.runtime=MD"] if os.name == "nt" else [])
     )
@@ -448,6 +454,10 @@ if __name__ == "__main__":
         "build_type=Debug",
 
     ]
+
+    if args.compatibility_profile: 
+        debugInstallCmd += ["-pr", f"{args.compatibility_profile}"]
+        
     try:
         if modify_comp_version_13:
             subprocess.run([
