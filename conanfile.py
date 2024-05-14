@@ -485,6 +485,9 @@ if __name__ == "__main__":
             f"-pr:h={args.host_profile_name}",
         ]
 
+        if args.compatibility_profile: 
+            infoCmd += ["-pr", f"{args.compatibility_profile}"]
+
         # 3.1) dict for Release dependencies
         res = subprocess.run(
             infoCmd
