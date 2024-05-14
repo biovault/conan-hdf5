@@ -85,7 +85,7 @@ runs:
 
         # Use the conanfile.py main to install the requirements both Debug & Release
         if [[ ${{ inputs.conan-build-os }} == "Macos" ]]; then
-          python conanfile.py action_build action_build compatibility
+          python conanfile.py action_build action_build --compatibility_profile compatibility
         else
           python conanfile.py action_build action_build
         fi
