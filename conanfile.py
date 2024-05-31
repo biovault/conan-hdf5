@@ -279,8 +279,7 @@ class HDF5Conan(ConanFile):
 
     # Package has no build type marking
     def package_id(self):
-        if self.settings.os != "Linux":
-            del self.info.settings.build_type
+        del self.info.settings.build_type
         if self.settings.compiler == "Visual Studio":
             del self.info.settings.compiler.runtime
 
@@ -315,6 +314,7 @@ class HDF5Conan(ConanFile):
         Path(package_dir).mkdir()
         print("Packaging install dir: ", package_dir)
         if self.settings.os != "Linux" or self.settings.build_type == "Debug":
+            print("Package Debug")
             subprocess.run(
                 [
                     "cmake",
@@ -335,6 +335,7 @@ class HDF5Conan(ConanFile):
                     shutil.copy(pfile, pdb_dest)
 
         if self.settings.os != "Linux" or self.settings.build_type == "Release":
+            print("Package Release")
             subprocess.run(
                 [
                     "cmake",
