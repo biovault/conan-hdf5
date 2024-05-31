@@ -147,7 +147,7 @@ class HDF5Conan(ConanFile):
 
         if self.settings.os == "Linux":
             generator = "Ninja Multi-Config"
-            # generator = "Unix Makefiles"
+            #generator = "Unix Makefiles"
 
         tc = CMakeToolchain(self, generator=generator)
         tc.variables[
@@ -184,11 +184,11 @@ class HDF5Conan(ConanFile):
         # tc.variables["PREFIX"] = "hdf5"
         # tc.variables["HDF5_PREFIX"] = "hdf5"
 
-        if self.settings.compiler == "Visual Studio":
-            tc.variables["CMAKE_DEBUG_POSTFIX"] = "_d"
-            tc.variables[
-                "CMAKE_MSVC_RUNTIME_LIBRARY"
-            ] = "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
+        #if self.settings.compiler == "Visual Studio":
+        tc.variables["CMAKE_DEBUG_POSTFIX"] = "_d"
+        tc.variables[
+            "CMAKE_MSVC_RUNTIME_LIBRARY"
+        ] = "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
 
         # Make sure all paths are Posix to avoid escape character issues
         if self.settings.os == "Macos":
@@ -214,12 +214,13 @@ class HDF5Conan(ConanFile):
         # print(f"Dependency libs {self.deps_cpp_info.libs}")
         # for item in deps.content.items():
         #     print(f"Generator files {item}")
-        if self.settings.os != "Linux" or self.settings.build_type == "Release":
-            deps.configuration = "Release"
-            deps.generate()
-        if self.settings.os != "Linux" or self.settings.build_type == "Debug":
-            deps.configuration = "Debug"
-            deps.generate()
+        # if self.settings.os != "Linux" or self.settings.build_type == "Release":
+        #     deps.configuration = "Release"
+        #     deps.generate()
+        # if self.settings.os != "Linux" or self.settings.build_type == "Debug":
+        #     deps.configuration = "Debug"
+        #     deps.generate()
+        deps.generate()
 
     def _configure_cmake(self):
         cmake = CMake(self)
@@ -249,14 +250,20 @@ class HDF5Conan(ConanFile):
     def build(self):
         print(f"zlib rootpath: {Path(self.deps_cpp_info['zlib'].rootpath).as_posix()}")
 
+        #if self.settings.build_type == "Release":
+        print("Release build")
+        cmake = self._configure_cmake()
+        self._do_build(cmake, "Release", ["--verbose"])
+
         # Until we know exactly which  dlls are needed just build release
-        if self.settings.build_type == "Debug":
+        #if self.settings.build_type == "Debug":
+        print("Debug build")
+        if self.settings.os != "Linux":
             cmake_debug = self._configure_cmake()
             self._do_build(cmake_debug, "Debug", ["--verbose"])
+        else:
+            self._do_build(cmake, "Debug", ["--verbose"])
 
-        if self.settings.build_type == "Release":
-            cmake_release = self._configure_cmake()
-            self._do_build(cmake_release, "Release", ["--verbose"])
 
     def cmake_fix_macos_sdk_path(self, file_path):
         # Read in the file
@@ -313,40 +320,40 @@ class HDF5Conan(ConanFile):
         package_dir = os.path.join(Path(self.build_folder).parents[0], "package")
         Path(package_dir).mkdir()
         print("Packaging install dir: ", package_dir)
-        if self.settings.os != "Linux" or self.settings.build_type == "Debug":
-            print("Package Debug")
-            subprocess.run(
-                [
-                    "cmake",
-                    "--install",
-                    self.build_folder,
-                    "--config",
-                    "Debug",
-                    "--prefix",
-                    package_dir,
-                ]
-            )
-            if tools.os_info.is_windows:
-                # pdb need to be adjacent to lib
-                pdb_dest = Path(package_dir, "lib")
-                # pdb_dest.mkdir()
-                pdb_files = Path(self.build_folder).glob("bin/Debug/*.pdb")
-                for pfile in pdb_files:
-                    shutil.copy(pfile, pdb_dest)
+        #if self.settings.os != "Linux" or self.settings.build_type == "Debug":
+        print("Package Debug")
+        subprocess.run(
+            [
+                "cmake",
+                "--install",
+                self.build_folder,
+                "--config",
+                "Debug",
+                "--prefix",
+                package_dir,
+            ]
+        )
+        if tools.os_info.is_windows:
+            # pdb need to be adjacent to lib
+            pdb_dest = Path(package_dir, "lib")
+            # pdb_dest.mkdir()
+            pdb_files = Path(self.build_folder).glob("bin/Debug/*.pdb")
+            for pfile in pdb_files:
+                shutil.copy(pfile, pdb_dest)
 
-        if self.settings.os != "Linux" or self.settings.build_type == "Release":
-            print("Package Release")
-            subprocess.run(
-                [
-                    "cmake",
-                    "--install",
-                    self.build_folder,
-                    "--config",
-                    "Release",
-                    "--prefix",
-                    package_dir,
-                ]
-            )
+        # if self.settings.os != "Linux" or self.settings.build_type == "Release":
+        print("Package Release")
+        subprocess.run(
+            [
+                "cmake",
+                "--install",
+                self.build_folder,
+                "--config",
+                "Release",
+                "--prefix",
+                package_dir,
+            ]
+        )
 
 
         # add dependencies to the packing dir before copying to package
