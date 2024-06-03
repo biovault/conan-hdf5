@@ -407,7 +407,7 @@ class HDF5Conan(ConanFile):
                 zlib_cmake_path = Path(
                     package_dir, "cmake", "hdf5-targets-zlib.cmake"
                 )
-                contentstr = """set(HDF5_ZLIB_ROOT,  "${_IMPORT_PREFIX}/zlib")
+                contentstr = """set(HDF5_ZLIB_ROOT  "${_IMPORT_PREFIX}/zlib")
                 """
                 files.save(self, Path(zlib_cmake_path), contentstr)
 
