@@ -204,6 +204,12 @@ class HDF5Conan(ConanFile):
 
         tc.variables["CMAKE_CONFIGURATION_TYPES"] = "Debug;Release"
 
+        if self.settings.os == "Windows":
+            tc.variables["CMAKE_CXX_FLAGS"] = tc.variables.get("CMAKE_CXX_FLAGS", "") + "/DWIN32 /EHsc /MP /permissive- /Zc:__cplusplus"
+            tc.variables["CMAKE_EXE_LINKER_FLAGS"] = tc.variables.get("CMAKE_EXE_LINKER_FLAGS", "") + "/NODEFAULTLIB:LIBCMT"
+            tc.variables["CMAKE_CXX_FLAGS_DEBUG"] = tc.variables.get("CMAKE_CXX_FLAGS_DEBUG", "") + "/MDd"
+            tc.variables["CMAKE_CXX_FLAGS_RELEASE"] = tc.variables.get("CMAKE_CXX_FLAGS_RELEASE", "") + "/MD"
+
         return tc
 
     def generate(self):
@@ -222,7 +228,7 @@ class HDF5Conan(ConanFile):
         #     deps.generate()
         deps.generate()
 
-    def _configure_cmake(self):
+    def _configure_cmake(self, cli_args=None):
         cmake = CMake(self)
         build_path = (
             Path(self.source_subfolder) if self.settings.os == "Windows" else Path(self.source_subfolder) / f"hdf5-{self.version}{self.patch_suffix}"
@@ -231,7 +237,7 @@ class HDF5Conan(ConanFile):
             f"source path (relative to {cmake._conanfile.source_folder}) {str(build_path)}"
         )
         cmake.configure(
-            build_script_folder=str(build_path)
+            build_script_folder=str(build_path), cli_args=cli_args
         )  # build_script_folder=str(PureWindowsPath(self.source_subfolder))
         return cmake
 
@@ -258,11 +264,9 @@ class HDF5Conan(ConanFile):
         # Until we know exactly which  dlls are needed just build release
         #if self.settings.build_type == "Debug":
         print("Debug build")
-        if self.settings.os != "Linux":
-            cmake_debug = self._configure_cmake()
-            self._do_build(cmake_debug, "Debug", ["--verbose"])
-        else:
-            self._do_build(cmake, "Debug", ["--verbose"])
+        cmake_debug = self._configure_cmake()
+        self._do_build(cmake_debug, "Debug", ["--verbose"])
+
 
 
     def cmake_fix_macos_sdk_path(self, file_path):
