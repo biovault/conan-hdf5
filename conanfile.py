@@ -256,16 +256,22 @@ class HDF5Conan(ConanFile):
     def build(self):
         print(f"zlib rootpath: {Path(self.deps_cpp_info['zlib'].rootpath).as_posix()}")
 
-        #if self.settings.build_type == "Release":
-        print("Release build")
+        #if self.settings.build_type == "Debug":
+        print("Start Debug build")
         cmake = self._configure_cmake()
-        self._do_build(cmake, "Release", ["--verbose"])
+        self._do_build(cmake, "Debug", ["--verbose"])
+        print("End Debug build")
 
         # Until we know exactly which  dlls are needed just build release
-        #if self.settings.build_type == "Debug":
-        print("Debug build")
-        cmake_debug = self._configure_cmake()
-        self._do_build(cmake_debug, "Debug", ["--verbose"])
+        #if self.settings.build_type == "Release":
+        print("Start Release build")
+        
+        if self.settings.os == "Linux":
+            self._do_build(cmake, "Release", ["--verbose"])
+        else:
+            cmake_debug = self._configure_cmake()
+            self._do_build(cmake_debug, "Release", ["--verbose"])
+        print("End Release build")
 
 
 
