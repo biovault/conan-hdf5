@@ -74,6 +74,10 @@ class HDF5Conan(ConanFile):
             )
             os.rename(self.linux_source_folder, self.source_subfolder)
 
+    def export_sources(self):
+        print(f"In export_sources {Path.cwd()}")
+        self.copy("*.cmake", src=Path(Path.cwd(), 'cmake'))
+
     def export(self):
         # This requires that libpath JSON files have created by running
         # python conanfile.py <build_profile> <host_profile>
@@ -116,8 +120,8 @@ class HDF5Conan(ConanFile):
             del self.options.fPIC
 
     def requirements(self):
-        if self.options.with_zlib:
-            self.requires("zlib/1.2.13")
+        #if self.options.with_zlib:
+        #    self.requires("zlib/1.2.13")
         if self.options.szip_support:
             self.requires("szip/2.1.1")
         if self.options.parallel:
@@ -168,19 +172,23 @@ class HDF5Conan(ConanFile):
         tc.variables["HDF5_ENABLE_SZIP_SUPPORT"] = (
             "ON" if self.options.szip_support else "OFF"
         )
+        tc.variables["TGZPATH"] = "${CMAKE_SOURCE_DIR}/../"
         tc.variables["HDF5_ENABLE_DEBUG_APIS"] = "OFF"
+        tc.variables["HDF5_ALLOW_EXTERNAL_SUPPORT"] = "GIT"
         # Using an external zlib
         if self.options.with_zlib:
             tc.variables["HDF5_ENABLE_Z_LIB_SUPPORT"] = "ON"
-        #    tc.variables["HDF5_ALLOW_EXTERNAL_SUPPORT"] = "GIT"
-        #    tc.variables["ZLIB_URL"] = "https://github.com/madler/zlib"
-        #    tc.variables["ZLIB_BRANCH"] = "tags/v1.2.13"
+            tc.variables["ZLIB_PACKAGE_NAME"] = "zlib"
+            tc.variables["ZLIB_GIT_URL"] = "https://github.com/madler/zlib"
+            tc.variables["ZLIB_GIT_BRANCH"] = "v1.3.1"
+             
 
         tc.variables["HDF5_BUILD_EXAMPLES"] = "OFF"
         tc.variables["HDF5_BUILD_UTILS"] = "OFF"
         tc.variables["HDF5_BUILD_TOOLS"] = "OFF"
         tc.variables["HDF5_ENABLE_EMBEDDED_LIBINFO"] = "OFF"
         tc.variables["HDF5_ENABLE_HSIZET"] = "OFF"
+        tc.variables["HDF5_PACKAGE_EXTLIBS"] = "ON"
         # tc.variables["PREFIX"] = "hdf5"
         # tc.variables["HDF5_PREFIX"] = "hdf5"
 
@@ -254,7 +262,6 @@ class HDF5Conan(ConanFile):
         # cmake.install(build_type=build_type)
 
     def build(self):
-        print(f"zlib rootpath: {Path(self.deps_cpp_info['zlib'].rootpath).as_posix()}")
 
         #if self.settings.build_type == "Debug":
         print("Start Debug build")
@@ -387,29 +394,29 @@ class HDF5Conan(ConanFile):
             # 1 Append d to debug lib files
             # 2 Copy all directories to <hdps packaging>/deps/zlib https://docs.python.org/3/library/shutil.html#shutil.copytree
             # 3 Define a ZLIB_ROOT variable as <hdps packaging>/deps/zlib (allows find_package(ZLIB))
-            if self.options.with_zlib:
-                print(f"packaging release zlib to {package_dir}")
-                shutil.copytree(Path(libpath_dict["zlib"]), Path(package_dir, "zlib"))
+            # if self.options.with_zlib:
+            #     print(f"packaging release zlib to {package_dir}")
+            #     shutil.copytree(Path(libpath_dict["zlib"]), Path(package_dir, "zlib"))
 
-                print("packaging debug zlib binaries")
-                zlib_libs = Path(libpath_debug_dict["zlib"], "lib").glob("*.*")
-                lib_dest = Path(package_dir, "zlib", "lib")
-                for lib in zlib_libs:
-                    print(f"packaging zlib from {lib} to {lib_dest}")
-                    # The original zlib libraries do not have a different name for debug.
-                    # So inject a suffix zlib.lib -> zlibd.lib to make a distinction.
-                    # The suffix is chosen for compatibility with cmake;s find_package(ZLIB)
-                    suffixed_file = self._inject_stem_suffix(lib, "d")
-                    shutil.copy(lib, Path(lib_dest, suffixed_file))
+            #     print("packaging debug zlib binaries")
+            #     zlib_libs = Path(libpath_debug_dict["zlib"], "lib").glob("*.*")
+            #     lib_dest = Path(package_dir, "zlib", "lib")
+            #     for lib in zlib_libs:
+            #         print(f"packaging zlib from {lib} to {lib_dest}")
+            #         # The original zlib libraries do not have a different name for debug.
+            #         # So inject a suffix zlib.lib -> zlibd.lib to make a distinction.
+            #         # The suffix is chosen for compatibility with cmake;s find_package(ZLIB)
+            #         suffixed_file = self._inject_stem_suffix(lib, "d")
+            #         shutil.copy(lib, Path(lib_dest, suffixed_file))
 
-                # Add ZLIB_ROOT to package
-                # define content for hdf5-targets-zlib.cmake
-                zlib_cmake_path = Path(
-                    package_dir, "cmake", "hdf5-targets-zlib.cmake"
-                )
-                contentstr = """set(HDF5_ZLIB_ROOT  "${_IMPORT_PREFIX}/zlib")
-                """
-                files.save(self, Path(zlib_cmake_path), contentstr)
+            #     # Add ZLIB_ROOT to package
+            #     # define content for hdf5-targets-zlib.cmake
+            #     zlib_cmake_path = Path(
+            #         package_dir, "cmake", "hdf5-targets-zlib.cmake"
+            #     )
+            #     contentstr = """set(HDF5_ZLIB_ROOT  "${_IMPORT_PREFIX}/zlib")
+            #     """
+            #     files.save(self, Path(zlib_cmake_path), contentstr)
 
         self.copy(pattern="*", src=package_dir)
 

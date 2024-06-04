@@ -91,9 +91,9 @@ runs:
         fi
         # Build the combined package (hdf5 + requirements in one package)
         if [[ ${{ inputs.conan-build-os }} == "Macos" ]]; then
-          conan create . hdf5/1.14.2@lkeb/stable -pr:h action_build -pr:b action_build -pr compatibility -s build_type=Release
+          conan create . hdf5/1.14.2@lkeb/test -pr:h action_build -pr:b action_build -pr compatibility -s build_type=Release
         else
-          conan create . hdf5/1.14.2@lkeb/stable -pr:h action_build -pr:b action_build -s build_type=Release
+          conan create . hdf5/1.14.2@lkeb/test -pr:h action_build -pr:b action_build -s build_type=Release
         fi
 
       shell: bash
