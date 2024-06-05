@@ -22,15 +22,12 @@ endmacro()
 set(HDF5_USE_STATIC_LIBRARIES TRUE)
 find_package(HDF5 COMPONENTS CXX C static REQUIRED)  # Using the static cpp library 
 message(status "HDF5 FOUND: ${HDF5_FOUND}")
-# our HDF5 bundles zlib in a subdirectory and provides a hint as to the root path
-set(ZLIB_ROOT ${HDF5_ZLIB_ROOT})
-find_package (ZLIB REQUIRED)
 
-print_all_variables()
+#print_all_variables()
 
 set (example hdf5example)
 add_executable (${example} ${example}.cpp)
 set_property(TARGET ${example} PROPERTY CXX_STANDARD 11)
-message("HDF5 VARIABLES FOR CXX 1: ${HDF5_INCLUDE_DIR} 2: ${HDF5_CXX_STATIC_LIBRARY} & ${HDF5_DIR} 3: ${ZLIB_LIBRARIES}")
+message("HDF5 VARIABLES FOR CXX 1: ${HDF5_INCLUDE_DIR} 2: ${HDF5_CXX_STATIC_LIBRARY} & ${HDF5_DIR}") 
 target_include_directories(${example} PRIVATE ${hdf5_INCLUDE_DIR})
-target_link_libraries (${example} PRIVATE ${C_STATIC_LIBRARY} ${HDF5_CXX_STATIC_LIBRARY} ${ZLIB_LIBRARIES})
+target_link_libraries (${example} PRIVATE ${C_STATIC_LIBRARY} ${HDF5_CXX_STATIC_LIBRARY})  

@@ -74,23 +74,28 @@ class HDF5Conan(ConanFile):
             )
             os.rename(self.linux_source_folder, self.source_subfolder)
 
+    def export_sources(self):
+        print(f"In export_sources {Path.cwd()}")
+        self.copy("*.cmake", src=Path(Path.cwd(), 'cmake'))
+
     def export(self):
         # This requires that libpath JSON files have created by running
         # python conanfile.py <build_profile> <host_profile>
         # (see __main__ below)
-        if not (
-            Path("libpath_dict.json").exists()
-            and Path("libpath_debug_dict.json").exists()
-        ):
-            print("****ERROR*** Missing library dict.json files.")
-            print(
-                "Check that: python conanfile.py <build_profile> <host_profile> \n",
-                "was first run successfully in this directory",
-            )
-            exit(1)
-        print(f"export folder {self.export_folder}")
-        for jf in Path(".").glob("libpath*.json"):
-            print(f"JSON {jf}")
+        # if not (
+        #     Path("libpath_dict.json").exists()
+        #     and Path("libpath_debug_dict.json").exists()
+        # ):
+        #     print("****ERROR*** Missing library dict.json files.")
+        #     print(
+        #         "Check that: python conanfile.py <build_profile> <host_profile> \n",
+        #         "was first run successfully in this directory",
+        #     )
+        #     exit(1)
+        # print(f"export folder {self.export_folder}")
+        # for jf in Path(".").glob("libpath*.json"):
+        #     print(f"JSON {jf}")
+        pass
 
     def _system_package_architecture(self):
         if tools.os_info.with_apt:
@@ -116,8 +121,8 @@ class HDF5Conan(ConanFile):
             del self.options.fPIC
 
     def requirements(self):
-        if self.options.with_zlib:
-            self.requires("zlib/1.2.13")
+        #if self.options.with_zlib:
+        #    self.requires("zlib/1.2.13")
         if self.options.szip_support:
             self.requires("szip/2.1.1")
         if self.options.parallel:
@@ -168,19 +173,36 @@ class HDF5Conan(ConanFile):
         tc.variables["HDF5_ENABLE_SZIP_SUPPORT"] = (
             "ON" if self.options.szip_support else "OFF"
         )
+        tc.variables["TGZPATH"] = "${CMAKE_SOURCE_DIR}/../"
         tc.variables["HDF5_ENABLE_DEBUG_APIS"] = "OFF"
+        tc.variables["HDF_PACKAGE_NAMESPACE"] = "hdf5::"
+        
         # Using an external zlib
         if self.options.with_zlib:
+            
+            # Build strategies are defined in hdf5/release_docs/INSTALL_Cmake.txt
+            # This setup is strategy D. (Download tar.gz sources)
+            # Using this because it also delivers the zlib CMAKE export files
             tc.variables["HDF5_ENABLE_Z_LIB_SUPPORT"] = "ON"
-        #    tc.variables["HDF5_ALLOW_EXTERNAL_SUPPORT"] = "GIT"
-        #    tc.variables["ZLIB_URL"] = "https://github.com/madler/zlib"
-        #    tc.variables["ZLIB_BRANCH"] = "tags/v1.2.13"
+            tc.variables["BUILD_ZLIB_WITH_FETCHCONTENT"] = "ON"
+            tc.variables["ZLIB_TGZ_ORIGPATH"] = "https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz"
+            # This setup is strategy B. (Use source packages from an GIT server)
+            #tc.variables["HDF5_ALLOW_EXTERNAL_SUPPORT"] = "GIT"
+            #tc.variables["BUILD_ZLIB_WITH_FETCHCONTENT"] = "OFF"
+            #tc.variables["ZLIB_GIT_URL"] = "https://github.com/madler/zlib"
+            #tc.variables["ZLIB_GIT_BRANCH"] = "v1.3.1"
+            tc.variables["ZLIB_EXTERNALLY_CONFIGURED"] = "OFF"
+            tc.variables["ZLIB_EXPORTED_TARGETS"] = "ON"
+            tc.variables["ZLIB_USE_EXTERNAL"] = "ON"
+            tc.variables["ZLIB_PACKAGE_NAME"] = "zlib"
+             
 
         tc.variables["HDF5_BUILD_EXAMPLES"] = "OFF"
         tc.variables["HDF5_BUILD_UTILS"] = "OFF"
         tc.variables["HDF5_BUILD_TOOLS"] = "OFF"
         tc.variables["HDF5_ENABLE_EMBEDDED_LIBINFO"] = "OFF"
         tc.variables["HDF5_ENABLE_HSIZET"] = "OFF"
+        tc.variables["HDF5_PACKAGE_EXTLIBS"] = "ON"
         # tc.variables["PREFIX"] = "hdf5"
         # tc.variables["HDF5_PREFIX"] = "hdf5"
 
@@ -254,11 +276,10 @@ class HDF5Conan(ConanFile):
         # cmake.install(build_type=build_type)
 
     def build(self):
-        print(f"zlib rootpath: {Path(self.deps_cpp_info['zlib'].rootpath).as_posix()}")
 
         #if self.settings.build_type == "Debug":
         print("Start Debug build")
-        cmake = self._configure_cmake()
+        cmake = self._configure_cmake() # To debug pass ["--log-level=VERBOSE", "--trace-expand"]
         self._do_build(cmake, "Debug", ["--verbose"])
         print("End Debug build")
 
@@ -365,192 +386,4 @@ class HDF5Conan(ConanFile):
             ]
         )
 
-
-        # add dependencies to the packing dir before copying to package
-        libpath_folder = Path(__file__).parent.resolve()
-        print(f"check export folder {str(libpath_folder)} for libpaths")
-        # package the requirements if they are found
-        if (
-            Path(libpath_folder, "libpath_dict.json").exists()
-            or Path(libpath_folder, "libpath_debug_dict.json").exists()
-        ):
-            if Path(libpath_folder, "libpath_dict.json").exists():
-                with open(Path(libpath_folder, "libpath_dict.json"), "r") as f:
-                    libpath_dict = json.load(f)
-                    print(f"{libpath_dict}")
-            if Path(libpath_folder, "libpath_debug_dict.json").exists():
-                with open(Path(libpath_folder, "libpath_debug_dict.json"), "r") as f:
-                    libpath_debug_dict = json.load(f)
-                    print(f"{libpath_debug_dict}")
-
-            # Merge debug and release zlibs as follows
-            # 1 Append d to debug lib files
-            # 2 Copy all directories to <hdps packaging>/deps/zlib https://docs.python.org/3/library/shutil.html#shutil.copytree
-            # 3 Define a ZLIB_ROOT variable as <hdps packaging>/deps/zlib (allows find_package(ZLIB))
-            if self.options.with_zlib:
-                print(f"packaging release zlib to {package_dir}")
-                shutil.copytree(Path(libpath_dict["zlib"]), Path(package_dir, "zlib"))
-
-                print("packaging debug zlib binaries")
-                zlib_libs = Path(libpath_debug_dict["zlib"], "lib").glob("*.*")
-                lib_dest = Path(package_dir, "zlib", "lib")
-                for lib in zlib_libs:
-                    print(f"packaging zlib from {lib} to {lib_dest}")
-                    # The original zlib libraries do not have a different name for debug.
-                    # So inject a suffix zlib.lib -> zlibd.lib to make a distinction.
-                    # The suffix is chosen for compatibility with cmake;s find_package(ZLIB)
-                    suffixed_file = self._inject_stem_suffix(lib, "d")
-                    shutil.copy(lib, Path(lib_dest, suffixed_file))
-
-                # Add ZLIB_ROOT to package
-                # define content for hdf5-targets-zlib.cmake
-                zlib_cmake_path = Path(
-                    package_dir, "cmake", "hdf5-targets-zlib.cmake"
-                )
-                contentstr = """set(HDF5_ZLIB_ROOT  "${_IMPORT_PREFIX}/zlib")
-                """
-                files.save(self, Path(zlib_cmake_path), contentstr)
-
         self.copy(pattern="*", src=package_dir)
-
-if __name__ == "__main__":
-    """
-    1) Install all requirements for this package - Release + Debug
-    2) Get list of requirements
-    3) For each requirement get the install path - create a release and debug dict
-    4) Write files
-    """
-    # 1) Install all dependencies - Release + Debug
-    parser = argparse.ArgumentParser()
-    parser.add_argument(
-        "build_profile_name", type=str, help="Name of the conan profile used for build"
-    )
-    parser.add_argument(
-        "host_profile_name", type=str, help="Name of the conan profile used for host"
-    )
-    parser.add_argument(
-        "--compatibility_profile", type=str, help="Name of the optional compatibility profile"
-    )
-    args = parser.parse_args()
-
-    modify_comp_version_13 = False
-    if platform.system() == 'Darwin':
-        print('checking compiler versioning')
-        p = subprocess.run(['conan', 'profile', 'show', f'{args.build_profile_name}'], capture_output=True, encoding='utf-8')
-        if p.stdout is not None:
-            print(f'config: {p.stdout}')
-            if 'compiler.version=13\n' in p.stdout:
-                modify_comp_version_13 = True
-                print(f'Will modify comp version in {p.stdout}')
-        else:
-            print(f'No profile {args.build_profile_name}')
-
-    # Install Release dependencies
-    baseInstall = [
-        "conan",
-        "install",
-        ".",
-        f"-pr:b={args.build_profile_name}",
-        f"-pr:h={args.host_profile_name}",
-        "--build=never",
-    ]
-    installCmd = baseInstall + [
-        "-s:h",
-        "build_type=Release",
-    ]
-
-    if args.compatibility_profile: 
-        installCmd += ["-pr", f"{args.compatibility_profile}"]
-
-    subprocess.run(
-        installCmd + (["-s:h", "compiler.runtime=MD"] if os.name == "nt" else [])
-    )
-
-    # Install Debug dependencies
-    debugInstallCmd = baseInstall + [
-        "-s:h",
-        "build_type=Debug",
-
-    ]
-
-    if args.compatibility_profile: 
-        debugInstallCmd += ["-pr", f"{args.compatibility_profile}"]
-        
-    try:
-        if modify_comp_version_13:
-            subprocess.run([
-                "conan", 
-                "profile", 
-                "update", 
-                "settings.compiler.version=13.0", 
-                f"{args.host_profile_name}"
-            ])
-
-        subprocess.run(
-            debugInstallCmd + (["-s:h", "compiler.runtime=MDd"] if os.name == "nt" else [])
-        )
-
-        # 3) For all requirements get the install path
-        # create a release and debug dict containing this information
-        infoCmd = [
-            "conan",
-            "info",
-            "--paths",
-            "--only",
-            "package_folder",
-            ".",
-            f"-pr:b={args.build_profile_name}",
-            f"-pr:h={args.host_profile_name}",
-        ]
-
-        if args.compatibility_profile: 
-            infoCmd += ["-pr", f"{args.compatibility_profile}"]
-
-        # 3.1) dict for Release dependencies
-        res = subprocess.run(
-            infoCmd
-            + ["-s:h", "build_type=Release"]
-            + (["-s:h", "compiler.runtime=MD"] if os.name == "nt" else []),
-            capture_output=True,
-            text=True,
-        )
-        # Reduce the conan info output list to array of requirement and package paths
-        # Dropping the last 2 entries (which are the package to be build)
-        req_path_array = [
-            x.strip().replace("package_folder:", "").strip() for x in res.stdout.split("\n")
-        ][0:-2]
-        deps_keys = [x.split("/")[0] for x in req_path_array[0::2]]
-        libpath_dict = dict(zip(deps_keys, req_path_array[1::2]))
-
-        # 3.2) dict for Debug dependencies
-        res = subprocess.run(
-            infoCmd
-            + ["-s:h", "build_type=Debug"]
-            + (["-s:h", "compiler.runtime=MDd"] if os.name == "nt" else []),
-            capture_output=True,
-            text=True,
-        )
-        req_path_array = [
-            x.strip().replace("package_folder:", "").strip() for x in res.stdout.split("\n")
-        ][0:-2]
-        deps_keys = [x.split("/")[0] for x in req_path_array[0::2]]
-        libpath_debug_dict = dict(zip(deps_keys, req_path_array[1::2]))
-
-        # 4) Display the results (for debugging) and save in json format to allow
-        # easy retrieval in the packaging step
-        print(libpath_dict)
-        print(libpath_debug_dict)
-        with open("libpath_dict.json", "w") as f:
-            json.dump(libpath_dict, f)
-        with open("libpath_debug_dict.json", "w") as f:
-            json.dump(libpath_debug_dict, f)
-    finally:
-        if modify_comp_version_13:
-            subprocess.run([
-                "conan", 
-                "profile", 
-                "update", 
-                "settings.compiler.version=13", 
-                f"{args.host_profile_name}"
-            ])
-

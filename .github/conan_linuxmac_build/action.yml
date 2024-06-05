@@ -83,17 +83,11 @@ runs:
 
         export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
 
-        # Use the conanfile.py main to install the requirements both Debug & Release
-        if [[ ${{ inputs.conan-build-os }} == "Macos" ]]; then
-          python conanfile.py action_build action_build --compatibility_profile compatibility
-        else
-          python conanfile.py action_build action_build
-        fi
         # Build the combined package (hdf5 + requirements in one package)
         if [[ ${{ inputs.conan-build-os }} == "Macos" ]]; then
-          conan create . hdf5/1.14.2@lkeb/stable -pr:h action_build -pr:b action_build -pr compatibility -s build_type=Release
+          conan create . hdf5/1.14.2@lkeb/test -pr:h action_build -pr:b action_build -pr compatibility -s build_type=Release
         else
-          conan create . hdf5/1.14.2@lkeb/stable -pr:h action_build -pr:b action_build -s build_type=Release
+          conan create . hdf5/1.14.2@lkeb/test -pr:h action_build -pr:b action_build -s build_type=Release
         fi
 
       shell: bash
