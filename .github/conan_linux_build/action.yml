@@ -81,11 +81,6 @@ runs:
 
         export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
 
-        # Use the conanfile.py main to install the requirements both Debug & Release
-        python conanfile.py action_build action_build
-
-        export CONAN_SKIP_BROKEN_SYMLINKS_CHECK=1
-
         conan create . hdf5/1.14.2@lkeb/test -pr:h action_build -pr:b action_build -s build_type=Release
         export CONAN_USER_HOME=`pwd`/_conan
         export CONAN_PACKAGE_NAME=`conan inspect --raw name conanfile.py`

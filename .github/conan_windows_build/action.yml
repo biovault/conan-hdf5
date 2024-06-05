@@ -70,8 +70,6 @@ runs:
         conan profile update conf.tools.microsoft.msbuild:max_cpu_count=2 action_build
         conan profile show action_build
 
-        REM Use the conanfile.py main to install the requirements both Debug & Release
-        python conanfile.py action_build action_build
         REM Build the combined package (hdf5 + requirements in one package)
         conan create . hdf5/1.14.2@lkeb/test -pr:h action_build -pr:b action_build -s build_type=Release
 
