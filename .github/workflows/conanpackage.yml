@@ -60,6 +60,15 @@ jobs:
             build-xcode-version: 14.3
             build-libcxx: libc++
 
+          - name: Macos_xcode15.3
+            os: macos-14
+            build-compiler: apple-clang
+            build-cversion: 15
+            build-config: Release
+            build-os: Macos
+            build-xcode-version: 15.3
+            build-libcxx: libc++
+
           # Using self hosted runer
           # - name: Macos_xcode12.4
           #   os: macos-11
