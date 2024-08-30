@@ -26,7 +26,7 @@ runs:
         pip install wheel
         pip install conan~=1.64.0
         pip install "markupsafe<2.1"
-        pip install -Iv cmake>=3.17
+        pip install -Iv cmake==3.21
         pip install h5py
 
         REM Fish the package name from the conanfile.py
