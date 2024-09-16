@@ -69,8 +69,17 @@ runs:
         conan profile new action_build
         conan profile update settings.os=${{ inputs.conan-build-os }} action_build
         conan profile update settings.os_build=${{ inputs.conan-build-os }} action_build
-        conan profile update settings.arch=x86_64 action_build
-        conan profile update settings.arch_build=x86_64 action_build
+        export minfo="i386"
+        if [[ ${{ inputs.conan-build-os }} == "Macos" ]]; then
+            export minfo=`arch`
+        fi 
+        if [[ $minfo == "i386" ]]; then 
+            conan profile update settings.arch=x86_64 action_build
+            conan profile update settings.arch_build=x86_64 action_build
+        else
+            conan profile update settings.arch=armv8 action_build
+            conan profile update settings.arch_build=armv8 action_build
+        fi
         conan profile update settings.compiler=${{ inputs.conan-compiler }} action_build
         conan profile update settings.compiler.version=${{ inputs.conan-compiler-version }} action_build
         conan profile update settings.compiler.libcxx=${{ inputs.conan-libcxx-version}} action_build
