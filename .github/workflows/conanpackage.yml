@@ -18,6 +18,13 @@ jobs:
             build-runtime: MD
             build-config: Release
 
+          - name: Windows-msvc2022
+            os: windows-2022
+            compiler: msvc-2022
+            build-cversion: 17
+            build-runtime: MD
+            build-config: Release
+
           # - name: Linux_gcc9
           #  os: ubuntu-20.04
           #  build-compiler: gcc
