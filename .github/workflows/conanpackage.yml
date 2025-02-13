@@ -13,7 +13,6 @@ jobs:
           - name: Windows-msvc2019
             os: windows-2019
             compiler: msvc-2019
-            host-arch: x64
             build-cversion: 16
             build-runtime: MD
             build-config: Release
@@ -61,7 +60,7 @@ jobs:
 
     steps:
       - name: Checkout the source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -73,17 +72,9 @@ jobs:
       # Self-hosted runners should have python and other software preconfigured
       - name: Setup python 3 version
         if: "!contains(matrix.os, 'self-hosted')"
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.11"
-          architecture: x64
-
-      - name: Setup gcc for Linux
-        if: startsWith(runner.os, 'Linux')
-        uses: egor-tensin/setup-gcc@v1
-        with:
-          version: ${{matrix.build-cversion}}
-          platform: x64
 
       - name: Windows build
         if: startsWith(runner.os, 'Windows')
