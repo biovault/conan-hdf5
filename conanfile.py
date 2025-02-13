@@ -152,7 +152,6 @@ class HDF5Conan(ConanFile):
 
         if self.settings.os == "Linux":
             generator = "Ninja Multi-Config"
-            #generator = "Unix Makefiles"
 
         tc = CMakeToolchain(self, generator=generator)
         tc.variables[
@@ -177,6 +176,18 @@ class HDF5Conan(ConanFile):
         tc.variables["HDF5_ENABLE_DEBUG_APIS"] = "OFF"
         tc.variables["HDF_PACKAGE_NAMESPACE"] = "hdf5::"
         
+        tc.variables["HDF5_BUILD_EXAMPLES"] = "OFF"
+        tc.variables["HDF5_BUILD_UTILS"] = "OFF"
+        tc.variables["HDF5_BUILD_TOOLS"] = "OFF"
+        tc.variables["HDF5_ENABLE_EMBEDDED_LIBINFO"] = "OFF"
+        tc.variables["HDF5_ENABLE_HSIZET"] = "OFF"
+        tc.variables["HDF5_PACKAGE_EXTLIBS"] = "ON"
+        # tc.variables["PREFIX"] = "hdf5"
+        # tc.variables["HDF5_PREFIX"] = "hdf5"
+
+        #if self.settings.compiler == "Visual Studio":
+        tc.variables["CMAKE_DEBUG_POSTFIX"] = "_d"
+
         # Using an external zlib
         if self.options.with_zlib:
             
@@ -196,22 +207,6 @@ class HDF5Conan(ConanFile):
             tc.variables["ZLIB_USE_EXTERNAL"] = "ON"
             tc.variables["ZLIB_PACKAGE_NAME"] = "zlib"
              
-
-        tc.variables["HDF5_BUILD_EXAMPLES"] = "OFF"
-        tc.variables["HDF5_BUILD_UTILS"] = "OFF"
-        tc.variables["HDF5_BUILD_TOOLS"] = "OFF"
-        tc.variables["HDF5_ENABLE_EMBEDDED_LIBINFO"] = "OFF"
-        tc.variables["HDF5_ENABLE_HSIZET"] = "OFF"
-        tc.variables["HDF5_PACKAGE_EXTLIBS"] = "ON"
-        # tc.variables["PREFIX"] = "hdf5"
-        # tc.variables["HDF5_PREFIX"] = "hdf5"
-
-        #if self.settings.compiler == "Visual Studio":
-        tc.variables["CMAKE_DEBUG_POSTFIX"] = "_d"
-        tc.variables[
-            "CMAKE_MSVC_RUNTIME_LIBRARY"
-        ] = "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
-
         # Make sure all paths are Posix to avoid escape character issues
         if self.settings.os == "Macos":
             self.env["DYLD_LIBRARY_PATH"] = str(
