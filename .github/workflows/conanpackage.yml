@@ -70,7 +70,7 @@ jobs:
 
     steps:
       - name: Checkout the source
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           submodules: recursive
 
@@ -86,13 +86,6 @@ jobs:
         with:
           python-version: "3.11"
           architecture: x64
-
-      - name: Setup gcc for Linux
-        if: startsWith(runner.os, 'Linux')
-        uses: egor-tensin/setup-gcc@v1
-        with:
-          version: ${{matrix.build-cversion}}
-          platform: x64
 
       - name: Windows build
         if: startsWith(runner.os, 'Windows')
