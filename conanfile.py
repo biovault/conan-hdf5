@@ -219,7 +219,7 @@ class HDF5Conan(ConanFile):
             Path(self.build_folder, "install").as_posix()
         )
 
-        tc.variables["CMAKE_CONFIGURATION_TYPES"] = "Debug;Release"
+        tc.variables["CMAKE_CONFIGURATION_TYPES"] = "Debug;RelWithDebInfo;Release"
 
         if self.settings.os == "Windows":
             tc.variables["CMAKE_CXX_FLAGS"] = tc.variables.get("CMAKE_CXX_FLAGS", "") + "/DWIN32 /EHsc /MP /permissive- /Zc:__cplusplus"
@@ -277,6 +277,11 @@ class HDF5Conan(ConanFile):
         cmake = self._configure_cmake() # To debug pass ["--log-level=VERBOSE", "--trace-expand"]
         self._do_build(cmake, "Debug", ["--verbose"])
         print("End Debug build")
+
+        print("Start RelWithDebInfo build")
+        cmake = self._configure_cmake() # To RelWithDebInfo pass ["--log-level=VERBOSE", "--trace-expand"]
+        self._do_build(cmake, "RelWithDebInfo", ["--verbose"])
+        print("End RelWithDebInfo build")
 
         # Until we know exactly which  dlls are needed just build release
         #if self.settings.build_type == "Release":
@@ -359,12 +364,29 @@ class HDF5Conan(ConanFile):
                 package_dir,
             ]
         )
+
+        print("Package RelWithDebInfo")
+        subprocess.run(
+            [
+                "cmake",
+                "--install",
+                self.build_folder,
+                "--config",
+                "RelWithDebInfo",
+                "--prefix",
+                package_dir,
+            ]
+        )
+
         if tools.os_info.is_windows:
             # pdb need to be adjacent to lib
             pdb_dest = Path(package_dir, "lib")
             # pdb_dest.mkdir()
-            pdb_files = Path(self.build_folder).glob("bin/Debug/*.pdb")
-            for pfile in pdb_files:
+            pdb_files_debug = Path(self.build_folder).glob("bin/Debug/*.pdb")
+            for pfile in pdb_files_debug:
+                shutil.copy(pfile, pdb_dest)
+            pdb_files_relWithDebug = Path(self.build_folder).glob("bin/RelWithDebInfo/*.pdb")
+            for pfile in pdb_files_relWithDebug:
                 shutil.copy(pfile, pdb_dest)
 
         # if self.settings.os != "Linux" or self.settings.build_type == "Release":
