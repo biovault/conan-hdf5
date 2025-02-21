@@ -280,8 +280,13 @@ class HDF5Conan(ConanFile):
         print("End Debug build")
 
         print("Start RelWithDebInfo build")
-        cmake = self._configure_cmake() # To RelWithDebInfo pass ["--log-level=VERBOSE", "--trace-expand"]
-        self._do_build(cmake, "RelWithDebInfo", ["--verbose"])
+        
+        if self.settings.os == "Linux":
+            self._do_build(cmake, "RelWithDebInfo", ["--verbose"])
+        else:
+            cmake_debug = self._configure_cmake()
+            self._do_build(cmake_debug, "RelWithDebInfo", ["--verbose"])
+        
         print("End RelWithDebInfo build")
 
         # Until we know exactly which  dlls are needed just build release
@@ -293,6 +298,7 @@ class HDF5Conan(ConanFile):
         else:
             cmake_debug = self._configure_cmake()
             self._do_build(cmake_debug, "Release", ["--verbose"])
+            
         print("End Release build")
 
 
