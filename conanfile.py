@@ -225,6 +225,7 @@ class HDF5Conan(ConanFile):
             tc.variables["CMAKE_CXX_FLAGS"] = tc.variables.get("CMAKE_CXX_FLAGS", "") + "/DWIN32 /EHsc /MP /permissive- /Zc:__cplusplus"
             tc.variables["CMAKE_EXE_LINKER_FLAGS"] = tc.variables.get("CMAKE_EXE_LINKER_FLAGS", "") + "/NODEFAULTLIB:LIBCMT"
             tc.variables["CMAKE_CXX_FLAGS_DEBUG"] = tc.variables.get("CMAKE_CXX_FLAGS_DEBUG", "") + "/MDd"
+            tc.variables["CMAKE_CXX_FLAGS_RELWITHDEBINFO"] = tc.variables.get("CMAKE_CXX_FLAGS_RELWITHDEBINFO", "") + "/MD"
             tc.variables["CMAKE_CXX_FLAGS_RELEASE"] = tc.variables.get("CMAKE_CXX_FLAGS_RELEASE", "") + "/MD"
 
         return tc
