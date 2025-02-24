@@ -15,7 +15,7 @@ inputs:
     description: "g++"
     required: true
   conan-compiler-version:
-    description: "A number [gcc: 5 6 7 8 9 10]"
+    description: "A number [gcc: 5 6 7 8 9 10 11 12 13 14]"
     required: true
   conan-libcxx-version:
     description: "Linux: libstdc++"
@@ -38,9 +38,7 @@ runs:
   steps:
     - name: Install conan & build configuration
       run: |
-        pip install wheel
-        pip install conan~=1.64.0
-        # pip install "markupsafe<2.1"
+        pip install conan~=1.66.0
         pip install -Iv cmake>=3.17
         # The following is only for the self-hosted M1 with the x64 brew
         pip install h5py

@@ -152,7 +152,6 @@ class HDF5Conan(ConanFile):
 
         if self.settings.os == "Linux":
             generator = "Ninja Multi-Config"
-            #generator = "Unix Makefiles"
 
         tc = CMakeToolchain(self, generator=generator)
         tc.variables[
@@ -177,6 +176,18 @@ class HDF5Conan(ConanFile):
         tc.variables["HDF5_ENABLE_DEBUG_APIS"] = "OFF"
         tc.variables["HDF_PACKAGE_NAMESPACE"] = "hdf5::"
         
+        tc.variables["HDF5_BUILD_EXAMPLES"] = "OFF"
+        tc.variables["HDF5_BUILD_UTILS"] = "OFF"
+        tc.variables["HDF5_BUILD_TOOLS"] = "OFF"
+        tc.variables["HDF5_ENABLE_EMBEDDED_LIBINFO"] = "OFF"
+        tc.variables["HDF5_ENABLE_HSIZET"] = "OFF"
+        tc.variables["HDF5_PACKAGE_EXTLIBS"] = "ON"
+        # tc.variables["PREFIX"] = "hdf5"
+        # tc.variables["HDF5_PREFIX"] = "hdf5"
+
+        #if self.settings.compiler == "Visual Studio":
+        tc.variables["CMAKE_DEBUG_POSTFIX"] = "_d"
+
         # Using an external zlib
         if self.options.with_zlib:
             
@@ -196,22 +207,6 @@ class HDF5Conan(ConanFile):
             tc.variables["ZLIB_USE_EXTERNAL"] = "ON"
             tc.variables["ZLIB_PACKAGE_NAME"] = "zlib"
              
-
-        tc.variables["HDF5_BUILD_EXAMPLES"] = "OFF"
-        tc.variables["HDF5_BUILD_UTILS"] = "OFF"
-        tc.variables["HDF5_BUILD_TOOLS"] = "OFF"
-        tc.variables["HDF5_ENABLE_EMBEDDED_LIBINFO"] = "OFF"
-        tc.variables["HDF5_ENABLE_HSIZET"] = "OFF"
-        tc.variables["HDF5_PACKAGE_EXTLIBS"] = "ON"
-        # tc.variables["PREFIX"] = "hdf5"
-        # tc.variables["HDF5_PREFIX"] = "hdf5"
-
-        #if self.settings.compiler == "Visual Studio":
-        tc.variables["CMAKE_DEBUG_POSTFIX"] = "_d"
-        tc.variables[
-            "CMAKE_MSVC_RUNTIME_LIBRARY"
-        ] = "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL"
-
         # Make sure all paths are Posix to avoid escape character issues
         if self.settings.os == "Macos":
             self.env["DYLD_LIBRARY_PATH"] = str(
@@ -224,12 +219,13 @@ class HDF5Conan(ConanFile):
             Path(self.build_folder, "install").as_posix()
         )
 
-        tc.variables["CMAKE_CONFIGURATION_TYPES"] = "Debug;Release"
+        tc.variables["CMAKE_CONFIGURATION_TYPES"] = "Debug;RelWithDebInfo;Release"
 
         if self.settings.os == "Windows":
             tc.variables["CMAKE_CXX_FLAGS"] = tc.variables.get("CMAKE_CXX_FLAGS", "") + "/DWIN32 /EHsc /MP /permissive- /Zc:__cplusplus"
             tc.variables["CMAKE_EXE_LINKER_FLAGS"] = tc.variables.get("CMAKE_EXE_LINKER_FLAGS", "") + "/NODEFAULTLIB:LIBCMT"
             tc.variables["CMAKE_CXX_FLAGS_DEBUG"] = tc.variables.get("CMAKE_CXX_FLAGS_DEBUG", "") + "/MDd"
+            tc.variables["CMAKE_CXX_FLAGS_RELWITHDEBINFO"] = tc.variables.get("CMAKE_CXX_FLAGS_RELWITHDEBINFO", "") + "/MD"
             tc.variables["CMAKE_CXX_FLAGS_RELEASE"] = tc.variables.get("CMAKE_CXX_FLAGS_RELEASE", "") + "/MD"
 
         return tc
@@ -283,6 +279,16 @@ class HDF5Conan(ConanFile):
         self._do_build(cmake, "Debug", ["--verbose"])
         print("End Debug build")
 
+        print("Start RelWithDebInfo build")
+        
+        if self.settings.os == "Linux":
+            self._do_build(cmake, "RelWithDebInfo", ["--verbose"])
+        else:
+            cmake_debug = self._configure_cmake()
+            self._do_build(cmake_debug, "RelWithDebInfo", ["--verbose"])
+        
+        print("End RelWithDebInfo build")
+
         # Until we know exactly which  dlls are needed just build release
         #if self.settings.build_type == "Release":
         print("Start Release build")
@@ -292,6 +298,7 @@ class HDF5Conan(ConanFile):
         else:
             cmake_debug = self._configure_cmake()
             self._do_build(cmake_debug, "Release", ["--verbose"])
+            
         print("End Release build")
 
 
@@ -364,12 +371,29 @@ class HDF5Conan(ConanFile):
                 package_dir,
             ]
         )
+
+        print("Package RelWithDebInfo")
+        subprocess.run(
+            [
+                "cmake",
+                "--install",
+                self.build_folder,
+                "--config",
+                "RelWithDebInfo",
+                "--prefix",
+                package_dir,
+            ]
+        )
+
         if tools.os_info.is_windows:
             # pdb need to be adjacent to lib
             pdb_dest = Path(package_dir, "lib")
             # pdb_dest.mkdir()
-            pdb_files = Path(self.build_folder).glob("bin/Debug/*.pdb")
-            for pfile in pdb_files:
+            pdb_files_debug = Path(self.build_folder).glob("bin/Debug/*.pdb")
+            for pfile in pdb_files_debug:
+                shutil.copy(pfile, pdb_dest)
+            pdb_files_relWithDebug = Path(self.build_folder).glob("bin/RelWithDebInfo/*.pdb")
+            for pfile in pdb_files_relWithDebug:
                 shutil.copy(pfile, pdb_dest)
 
         # if self.settings.os != "Linux" or self.settings.build_type == "Release":
